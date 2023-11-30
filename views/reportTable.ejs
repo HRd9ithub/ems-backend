@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <title>Document</title>
+    <style>
+        .table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .table td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        .head {
+            padding: 16px;
+        }
+
+        .table th {
+            text-align: left;
+            background-color: #e3f4fb;
+            /* text-transform: uppercase; */
+            text-transform: capitalize;
+            color: rgba(0, 0, 0, 0.87);
+            font-size: 13px !important;
+            font-weight: 700 !important;
+        }
+
+        .summary-report-info {
+            background-color: #eaeff0;
+            font-weight: 500 !important;
+            border-radius: 5px;
+            -moz-border-radius: 5px;
+            -ms-border-radius: 5px;
+            -o-border-radius: 5px;
+            -webkit-border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <table width="100%">
+        <tbody>
+            <tr>
+                <td>
+                    <h4 style="display: inline;">Name : </h4>
+                    <%= name %>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table width="100%" cellspacing="10px">
+        <thead>
+            <tr class="summary-report">
+                <th scope="col" class="summary-report-info" style="padding: 15px 10px;">
+                    <table width="100%">
+                        <tbody>
+                            <tr>
+                                <td align="start">Total Working Days</td>
+                                <td align="end">
+                                    <%= summary.dayCount %>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </th>
+                <th scope="col" class="summary-report-info" style="padding: 15px 10px;">
+                    <table width="100%">
+                        <tbody>
+                            <tr>
+                                <td align="start">Hours</td>
+                                <td align="end">
+                                    <%= summary.totalHours %>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </th>
+                <th scope="col" class="summary-report-info" style="padding: 15px 10px;">
+                    <table width="100%">
+                        <tbody>
+                            <tr>
+                                <td align="start">Holiday</td>
+                                <td align="end">
+                                    <%= summary.holidayCount %>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </th>
+                <th scope="col" class="summary-report-info" style="padding: 15px 10px;">
+                    <table width="100%">
+                        <tbody>
+                            <tr>
+                                <td align="start">Full Leave</td>
+                                <td align="end">
+                                    <%= summary.fullLeave %>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </th>
+                <th scope="col" class="summary-report-info" style="padding: 15px 10px;">
+                    <table width="100%">
+                        <tbody>
+                            <tr>
+                                <td align="start">Half Leave</td>
+                                <td align="end">
+                                    <%= summary.halfLeave %>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </th>
+            </tr>
+        </thead>
+    </table>
+    <table class="table">
+        <thead>
+            <tr class="head">
+                <th scope="col" class="head">Date</th>
+                <th scope="col" class="head">Total Hours</th>
+                <th scope="col" class="head">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (reports.length> 0) { %>
+                <% for(let i=0;i<reports.length;i++) { %>
+                    <tr>
+                        <% if(reports[i].name==="Leave" ){ %>
+                            <td colspan="3" style="text-align: center; color: red; ">
+                                <%= reports[i].name && reports[i].date %>
+                                    <%= reports[i].name && "-" %>
+                                        <%= reports[i].name %>(<%= reports[i].leave_for %>)
+                            </td>
+                        <% } else if(reports[i].userId){ %>
+                            <td style="width :15%;">
+                                <%= reports[i].userId && reports[i].date %>
+                            </td>
+                            <td style="width :15%; text-align: center;">
+                                <%= reports[i].userId && reports[i].totalHours %>
+                            </td>
+                            <td>
+                                <% for(let j=0;j<reports[i].work.length;j++) { %>
+                                    <p style="font-weight: bold;" className='mb-0'>
+                                        <%= j + 1 %>.
+                                            <%= reports[i].work[j].project?.name %>
+                                    </p>
+                                    <div className='w-100 text-wrap'>
+                                        <%= reports[i].work[j].description %>
+                                    </div>
+                                <%} %>
+                            </td>
+                        <% } else { %>
+                            <td colspan="3" style="text-align: center; color: orange;">
+                                <%= reports[i].name && reports[i].date %>
+                                    <%= reports[i].name && "-" %>
+                                        <%= reports[i].name %>
+                            </td>
+                        <% } %>
+                    </tr>
+                <% } %>
+            <% } else { %>
+                <td colspan="3" style="text-align: center; color: rgb(34 34 34);">
+                    No Records Found
+                </td>
+            <%} %>
+        </tbody>
+    </table>
+</body>
+
+</html>
