@@ -395,7 +395,7 @@ const generatorPdf = async (req, res) => {
                 return res.status(200).json({ data: Test, success: true, summary: summary })
             })
             .catch((error) => {
-                return res.status(400).json({ message: error.message || 'Something went wrong. please try again.', success: false });
+                return res.status(400).json({ message: 'Something went wrong. please try again.',stack : error.message, success: false });
             });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
