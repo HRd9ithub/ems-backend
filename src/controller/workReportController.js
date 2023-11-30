@@ -3,12 +3,11 @@ const user = require("../models/userSchema");
 const report = require("../models/workReportSchema");
 const Leave = require("../models/leaveSchema");
 const holiday = require("../models/holidaySchema");
-let moment = require("moment");
-let path = require("path");
+const moment = require("moment");
+const path = require("path");
 const { default: mongoose } = require("mongoose");
-var fs = require('fs');
-const pdf = require("html-pdf");
-var ejs = require('ejs');
+const fs = require('fs');
+const pdf = require("pdf-creator-node");
 const createActivity = require("../helper/addActivity");
 const decryptData = require("../helper/decryptData");
 
@@ -131,7 +130,7 @@ const getReport = async (req, res) => {
                     $and: [
                         { date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
                         { date: { $lte: moment(endDate).format("YYYY-MM-DD") } }],
-                    userId : !identify ? {$nin : []} : { $eq : new mongoose.Types.ObjectId(id || req.user._id)}
+                    userId: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) }
                 }
             },
             {
@@ -367,33 +366,37 @@ const generatorPdf = async (req, res) => {
             totalHours,
         }
 
-        let ejsData = {
+        // read file
+        const html = fs.readFileSync(path.join(__dirname, '../../public/template.html'), "utf8");
+
+        // pdf option
+        const options = {
+            format: "A4",
+            orientation: "portrait",
+            border: "10mm"
+        };
+
+        const ejsData = {
             reports: Test,
             summary: summary,
             name: userData.first_name.concat(" ", userData.last_name)
         }
-        // get file path
-        let filepath = path.resolve(__dirname, "../../views/reportTable.ejs");
-
-        // read file using fs module
-        let htmlstring = fs.readFileSync(filepath).toString();
-        // add data dynamic
-        let handleData = ejs.render(htmlstring, ejsData);
-
-        // pdf format
-        let options = {
-            format: "A4",
-            orientation: "portrait",
-            border: "10mm"
-        }
+        
         const pathData = path.join(__dirname,`../../public/document/${id.concat(".", "pdf")}`)
-        pdf.create(handleData, options).toFile(pathData, (error, response) => {
-            if (error) {
-                return res.status(400).json({ message: error.message || 'Something went wrong. please try again.', success: false });
-            }
-
-            return res.status(200).json({ data: Test, success: true, summary: summary })
-        })
+        const document = {
+            html: html,
+            data: ejsData,
+            path: pathData,
+            type: "",
+        };
+    
+        pdf.create(document, options)
+            .then((result) => {
+                return res.status(200).json({ data: Test, success: true, summary: summary })
+            })
+            .catch((error) => {
+                return res.status(400).json({ message: 'Something went wrong. please try again.', success: false });
+            });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
