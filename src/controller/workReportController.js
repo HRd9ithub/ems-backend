@@ -371,6 +371,7 @@ const generatorPdf = async (req, res) => {
 
         // pdf option
         const options = {
+            phantomPath: require('phantomjs-prebuilt').path,
             format: "A4",
             orientation: "portrait",
             border: "10mm"
