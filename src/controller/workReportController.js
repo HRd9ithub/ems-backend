@@ -209,322 +209,160 @@ const getReport = async (req, res) => {
 const generatorPdf = async (req, res) => {
     try {
         let { id, month } = req.body;
-        // month.concat("-", "1");
-        // let date = moment(new Date()).format("YYYY-MM") == month
+        month.concat("-", "1");
+        let date = moment(new Date()).format("YYYY-MM") == month
 
-        // const startDate = moment(month).startOf('month').format('YYYY-MM-DD');
-        // const endDate = date ? moment(new Date()).format('YYYY-MM-DD') : moment(month).endOf('month').format('YYYY-MM-DD');
+        const startDate = moment(month).startOf('month').format('YYYY-MM-DD');
+        const endDate = date ? moment(new Date()).format('YYYY-MM-DD') : moment(month).endOf('month').format('YYYY-MM-DD');
 
-        // // get project data in database
-        // let data = await report.aggregate([
-        //     {
-        //         $match: {
-        //             $and: [
-        //                 { date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
-        //                 { date: { $lte: moment(endDate).format("YYYY-MM-DD") } }],
-        //             userId: new mongoose.Types.ObjectId(id || req.user._id)
-        //         }
-        //     },
-        //     {
-        //         $unwind: {
-        //             path: '$work'
-        //         }
-        //     },
-        //     {
-        //         $lookup: {
-        //             from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
-        //         }
-        //     },
-        //     {
-        //         $unwind: {
-        //             path: '$work.project',
-        //             preserveNullAndEmptyArrays: true
-        //         }
-        //     },
-        //     {
-        //         $group: {
-        //             _id: '$_id',
-        //             _id: {
-        //                 userId: '$userId',
-        //                 createdAt: '$createdAt',
-        //                 updatedAt: '$updatedAt',
-        //                 totalHours: '$totalHours',
-        //                 date: '$date',
-        //                 _id: '$_id',
+        // get project data in database
+        let data = await report.aggregate([
+            {
+                $match: {
+                    $and: [
+                        { date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                        { date: { $lte: moment(endDate).format("YYYY-MM-DD") } }],
+                    userId: new mongoose.Types.ObjectId(id || req.user._id)
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work'
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    _id: {
+                        userId: '$userId',
+                        createdAt: '$createdAt',
+                        updatedAt: '$updatedAt',
+                        totalHours: '$totalHours',
+                        date: '$date',
+                        _id: '$_id',
 
-        //             },
-        //             work: {
-        //                 $push: '$work'
-        //             }
-        //         }
-        //     },
-        //     {
-        //         $project: {
-        //             userId: "$_id.userId",
-        //             totalHours: "$_id.totalHours",
-        //             date: "$_id.date",
-        //             work: 1,
-        //             updatedAt: "$_id.updatedAt",
-        //             _id: "$_id._id"
-        //         }
-        //     }
-        // ])
+                    },
+                    work: {
+                        $push: '$work'
+                    }
+                }
+            },
+            {
+                $project: {
+                    userId: "$_id.userId",
+                    totalHours: "$_id.totalHours",
+                    date: "$_id.date",
+                    work: 1,
+                    updatedAt: "$_id.updatedAt",
+                    _id: "$_id._id"
+                }
+            }
+        ])
 
-        // let data1 = await Leave.find({
-        //     user_id: new mongoose.Types.ObjectId(id || req.user._id),
-        //     $and: [
-        //         { "status": { $eq: "Approved" } },
-        //         { "from_date": { $gte: moment(startDate).format("YYYY-MM-DD") } },
-        //         { "to_date": { $lte: moment(endDate).format("YYYY-MM-DD") } },
-        //     ]
-        // })
-        // let data2 = await holiday.find({
-        //     $and: [
-        //         { "date": { $gte: moment(startDate).format("YYYY-MM-DD") } },
-        //         { "date": { $lte: moment(endDate).format("YYYY-MM-DD") } },
-        //     ]
-        // })
+        let data1 = await Leave.find({
+            user_id: new mongoose.Types.ObjectId(id || req.user._id),
+            $and: [
+                { "status": { $eq: "Approved" } },
+                { "from_date": { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                { "to_date": { $lte: moment(endDate).format("YYYY-MM-DD") } },
+            ]
+        })
+        let data2 = await holiday.find({
+            $and: [
+                { "date": { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                { "date": { $lte: moment(endDate).format("YYYY-MM-DD") } },
+            ]
+        })
 
-        // let filterData = [...data, ...data2]
+        let filterData = [...data, ...data2]
 
-        // data1.forEach((val) => {
-        //     var from_date = moment(val.from_date);
-        //     var to_date = moment(val.to_date);
-        //     let day = to_date.diff(from_date, 'days');
-        //     for (let index = 0; index <= day; index++) {
-        //         var new_date = moment(val.from_date).add(index, "d");
-        //         let result = data2.find((item) => {
-        //             return item.date === moment(new_date).format("YYYY-MM-DD")
-        //         })
-        //         if (!result) {
-        //             filterData.push({ date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for })
-        //         }
-        //     }
-        // })
-        // var mstartDate = moment(startDate);
-        // var mendDate = moment(endDate);
-        // let days = mendDate.diff(mstartDate, 'days');
-        // for (let index = 0; index <= days; index++) {
-        //     var new_date = moment(startDate).add(index, "d");
-        //     if (moment(new_date).format("dddd") == "Saturday" || moment(new_date).format("dddd") == "Sunday") {
-        //         filterData.push({ date: moment(new_date).format("YYYY-MM-DD"), name: moment(new_date).format("dddd") })
-        //     }
-        // }
+        data1.forEach((val) => {
+            var from_date = moment(val.from_date);
+            var to_date = moment(val.to_date);
+            let day = to_date.diff(from_date, 'days');
+            for (let index = 0; index <= day; index++) {
+                var new_date = moment(val.from_date).add(index, "d");
+                let result = data2.find((item) => {
+                    return item.date === moment(new_date).format("YYYY-MM-DD")
+                })
+                if (!result) {
+                    filterData.push({ date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for })
+                }
+            }
+        })
+        var mstartDate = moment(startDate);
+        var mendDate = moment(endDate);
+        let days = mendDate.diff(mstartDate, 'days');
+        for (let index = 0; index <= days; index++) {
+            var new_date = moment(startDate).add(index, "d");
+            if (moment(new_date).format("dddd") == "Saturday" || moment(new_date).format("dddd") == "Sunday") {
+                filterData.push({ date: moment(new_date).format("YYYY-MM-DD"), name: moment(new_date).format("dddd") })
+            }
+        }
 
-        // let finalData = [];
+        let finalData = [];
 
-        // filterData.map((val) => {
-        //     if (finalData.length === 0) {
-        //         finalData.push(val)
-        //     } else {
-        //         let isDublication = finalData.filter((elem) => {
-        //             return val.date == elem.date
-        //         })
-        //         if (isDublication.length === 0 || (val?.name !== "Saturday" && val?.name !== "Sunday")) {
-        //             finalData.push(val)
-        //         }
-        //     }
-        // });
+        filterData.map((val) => {
+            if (finalData.length === 0) {
+                finalData.push(val)
+            } else {
+                let isDublication = finalData.filter((elem) => {
+                    return val.date == elem.date
+                })
+                if (isDublication.length === 0 || (val?.name !== "Saturday" && val?.name !== "Sunday")) {
+                    finalData.push(val)
+                }
+            }
+        });
 
-        // let Test = finalData.sort(function (a, b) {
-        //     return new Date(a.date) - new Date(b.date)
-        // });
+        let Test = finalData.sort(function (a, b) {
+            return new Date(a.date) - new Date(b.date)
+        });
 
         let userData = await user.findOne({ _id: id }, { first_name: 1, last_name: 1 });
 
-        // //  ? generate total 
-        // let holidayCount = data2.length;
-        // // let dayCount = moment(endDate).format('DD');
+        //  ? generate total 
+        let holidayCount = data2.length;
+        // let dayCount = moment(endDate).format('DD');
 
-        // function uniqByKeepLast(data, key) {
+        function uniqByKeepLast(data, key) {
 
-        //     return [...new Map(data.map(x => [key(x), x])).values()]
+            return [...new Map(data.map(x => [key(x), x])).values()]
 
-        // }
+        }
 
-        // let dayCount = uniqByKeepLast(Test, it => it.date).length;
+        let dayCount = uniqByKeepLast(Test, it => it.date).length;
 
-        // let halfLeave = Test.filter((cur) => {
-        //     return cur.leave_for && cur.leave_for === "Half"
-        // })
-        // let fullLeave = Test.filter((cur) => {
-        //     return cur.leave_for && cur.leave_for === "Full"
-        // })
-        // let LeaveCount = fullLeave.length + (halfLeave.length / 2);
+        let halfLeave = Test.filter((cur) => {
+            return cur.leave_for && cur.leave_for === "Half"
+        })
+        let fullLeave = Test.filter((cur) => {
+            return cur.leave_for && cur.leave_for === "Full"
+        })
+        let LeaveCount = fullLeave.length + (halfLeave.length / 2);
 
-        // let totalHours = data.reduce((accumulator, currentValue) => {
-        //     return (accumulator.totalHours ? Number(accumulator.totalHours) : Number(accumulator)) + Number(currentValue.totalHours)
-        // }, 0)
-
-        // let summary = {
-        //     LeaveCount,
-        //     halfLeave: halfLeave.length,
-        //     fullLeave: fullLeave.length,
-        //     holidayCount,
-        //     dayCount,
-        //     totalHours,
-        // }
-
-        let data = [
-            {
-                "date": "2023-10-01",
-                "name": "Sunday"
-            },
-            {
-                "date": "2023-10-07",
-                "name": "Saturday"
-            },
-            {
-                "date": "2023-10-08",
-                "name": "Sunday"
-            },
-            {
-                "work": [
-                    {
-                        "projectId": "652fbbf5fa7f4184d86a9cc7",
-                        "description": "testing website",
-                        "hours": "10",
-                        "_id": "652fc6cffa7f4184d86a9e16",
-                        "project": {
-                            "_id": "652fbbf5fa7f4184d86a9cc7",
-                            "name": "EMS",
-                            "createdAt": "2023-10-18T11:05:25.629Z",
-                            "updatedAt": "2023-10-18T11:05:25.629Z",
-                            "__v": 0
-                        }
-                    }
-                ],
-                "userId": "652fad38fa7f4184d86a9ae5",
-                "totalHours": "10",
-                "date": "2023-10-14",
-                "updatedAt": "2023-10-18T11:51:43.236Z",
-                "_id": "652fc6cffa7f4184d86a9e15"
-            }, {
-                "date": "2023-10-15",
-                "name": "Sunday"
-            },
-            {
-                "work": [
-                    {
-                        "projectId": "652fbbf5fa7f4184d86a9cc7",
-                        "description": "1. work on working report download completed and show report preview and \n     summary display completed.\n2. work on preview modal select add validation.\n3. work on changes for date related and add button by digvijaysinh sir for done.",
-                        "hours": "8",
-                        "_id": "65312f67497d6b48f37568cd",
-                        "project": {
-                            "_id": "652fbbf5fa7f4184d86a9cc7",
-                            "name": "EMS",
-                            "createdAt": "2023-10-18T11:05:25.629Z",
-                            "updatedAt": "2023-10-18T11:05:25.629Z",
-                            "__v": 0
-                        }
-                    },
-                    {
-                        "projectId": "652fbbf5fa7f4184d86a9cc7",
-                        "description": "1. work on working report download completed and show report preview and \n     summary display completed.\n2. work on preview modal select add validation.\n3. work on changes for date related and add button by digvijaysinh sir for done.",
-                        "hours": "8",
-                        "_id": "65312f67497d6b48f37568cd",
-                        "project": {
-                            "_id": "652fbbf5fa7f4184d86a9cc7",
-                            "name": "EMS",
-                            "createdAt": "2023-10-18T11:05:25.629Z",
-                            "updatedAt": "2023-10-18T11:05:25.629Z",
-                            "__v": 0
-                        }
-                    },
-                    {
-                        "projectId": "652fbbf5fa7f4184d86a9cc7",
-                        "description": "1. work on working report download completed and show report preview and \n     summary display completed.\n2. work on preview modal select add validation.\n3. work on changes for date related and add button by digvijaysinh sir for done.",
-                        "hours": "8",
-                        "_id": "65312f67497d6b48f37568cd",
-                        "project": {
-                            "_id": "652fbbf5fa7f4184d86a9cc7",
-                            "name": "EMS",
-                            "createdAt": "2023-10-18T11:05:25.629Z",
-                            "updatedAt": "2023-10-18T11:05:25.629Z",
-                            "__v": 0
-                        }
-                    },
-                    {
-                        "projectId": "652fbbf5fa7f4184d86a9cc7",
-                        "description": "1. work on working report download completed and show report preview and \n     summary display completed.\n2. work on preview modal select add validation.\n3. work on changes for date related and add button by digvijaysinh sir for done.",
-                        "hours": "8",
-                        "_id": "65312f67497d6b48f37568cd",
-                        "project": {
-                            "_id": "652fbbf5fa7f4184d86a9cc7",
-                            "name": "EMS",
-                            "createdAt": "2023-10-18T11:05:25.629Z",
-                            "updatedAt": "2023-10-18T11:05:25.629Z",
-                            "__v": 0
-                        }
-                    },
-                ],
-                "userId": "652fad38fa7f4184d86a9ae5",
-                "totalHours": "8",
-                "date": "2023-10-17",
-                "updatedAt": "2023-10-19T13:30:15.878Z",
-                "_id": "65312f67497d6b48f37568cc"
-            },
-            {
-                "work": [
-                    {
-                        "projectId": "652fbbf5fa7f4184d86a9cc7",
-                        "description": "1. work on website testing to solve bugs.",
-                        "hours": "8",
-                        "_id": "65312ee2497d6b48f375688a",
-                        "project": {
-                            "_id": "652fbbf5fa7f4184d86a9cc7",
-                            "name": "EMS",
-                            "createdAt": "2023-10-18T11:05:25.629Z",
-                            "updatedAt": "2023-10-18T11:05:25.629Z",
-                            "__v": 0
-                        }
-                    }
-                ],
-                "userId": "652fad38fa7f4184d86a9ae5",
-                "totalHours": "8",
-                "date": "2023-10-18",
-                "updatedAt": "2023-10-19T13:31:17.060Z",
-                "_id": "65312ee2497d6b48f3756889"
-            },
-            {
-                "work": [
-                    {
-                        "projectId": "652fbbf5fa7f4184d86a9cc7",
-                        "description": "1. work on website testing to solve bugs.",
-                        "hours": "8",
-                        "_id": "65312f87497d6b48f37568dd",
-                        "project": {
-                            "_id": "652fbbf5fa7f4184d86a9cc7",
-                            "name": "EMS",
-                            "createdAt": "2023-10-18T11:05:25.629Z",
-                            "updatedAt": "2023-10-18T11:05:25.629Z",
-                            "__v": 0
-                        }
-                    }
-                ],
-                "userId": "652fad38fa7f4184d86a9ae5",
-                "totalHours": "8",
-                "date": "2023-10-19",
-                "updatedAt": "2023-10-19T13:30:47.829Z",
-                "_id": "65312f87497d6b48f37568dc"
-            },
-            {
-                "date": "2023-10-21",
-                "name": "Saturday"
-            },
-            {
-                "date": "2023-10-22",
-                "name": "Sunday"
-            }
-        ]
+        let totalHours = data.reduce((accumulator, currentValue) => {
+            return (accumulator.totalHours ? Number(accumulator.totalHours) : Number(accumulator)) + Number(currentValue.totalHours)
+        }, 0)
 
         let summary = {
-            "LeaveCount": 0,
-            "halfLeave": 0,
-            "fullLeave": 0,
-            "holidayCount": 0,
-            "dayCount": 10,
-            "totalHours": 34
+            LeaveCount,
+            halfLeave: halfLeave.length,
+            fullLeave: fullLeave.length,
+            holidayCount,
+            dayCount,
+            totalHours,
         }
 
         // read file
@@ -538,7 +376,7 @@ const generatorPdf = async (req, res) => {
         };
 
         const ejsData = {
-            reports: data,
+            reports: Test,
             summary: summary,
             name: userData.first_name.concat(" ", userData.last_name)
         }
@@ -552,7 +390,7 @@ const generatorPdf = async (req, res) => {
 
         pdf.create(document, options)
             .then((result) => {
-                return res.status(200).json({ data: data, success: true, summary: summary })
+                return res.status(200).json({ data: Test, success: true, summary: summary })
             })
             .catch((error) => {
                 return res.status(400).json({ message: 'Something went wrong. please try again.', stack: error.message, success: false });
