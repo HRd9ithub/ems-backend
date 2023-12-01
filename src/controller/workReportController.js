@@ -3,13 +3,14 @@ const user = require("../models/userSchema");
 const report = require("../models/workReportSchema");
 const Leave = require("../models/leaveSchema");
 const holiday = require("../models/holidaySchema");
-const moment = require("moment");
-const path = require("path");
-const { default: mongoose } = require("mongoose");
-const fs = require('fs');
 const createActivity = require("../helper/addActivity");
 const decryptData = require("../helper/decryptData");
-const pdf = require("pdf-creator-node");
+const { default: mongoose } = require("mongoose");
+const moment = require("moment");
+const path = require("path");
+const fs = require('fs');
+var ejs = require("ejs");
+const PuppeteerHTMLPDF = require('puppeteer-html-pdf');
 
 
 const createReport = async (req, res) => {
@@ -366,41 +367,46 @@ const generatorPdf = async (req, res) => {
             totalHours,
         }
 
-        // read file
-        const html = fs.readFileSync(path.join(__dirname, '../../public/template.html'), "utf8");
-
-        // pdf option
-        const options = {
-            phantomPath: require('phantomjs-prebuilt').path,
-            format: "A4",
-            orientation: "portrait",
-            border: "10mm"
-        };
-
-        const ejsData = {
+        let ejsData = {
             reports: Test,
             summary: summary,
             name: userData.first_name.concat(" ", userData.last_name)
         }
-        
-        const pathData = path.join(__dirname,`../../public/document/${id.concat(".", "pdf")}`)
-        const document = {
-            html: html,
-            data: ejsData,
-            path: pathData,
-            type: "",
-        };
-    
-        pdf.create(document, options)
-            .then((result) => {
-                return res.status(200).json({ data: Test, success: true, summary: summary })
-            })
-            .catch((error) => {
-                return res.status(400).json({ message: 'Something went wrong. please try again.',stack : error.message, success: false });
-            });
+
+        convertHTMLtoPDF(res, ejsData, id).then(() => {
+            return res.status(200).json({ data: Test, success: true, summary: summary });
+        })
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
+}
+
+const convertHTMLtoPDF = async (response, ejsData, id) => {
+        // get file path
+        let filepath = path.resolve(__dirname, "../../views/reportTable.ejs");
+
+        // read file using fs module
+        let htmlstring = fs.readFileSync(filepath).toString();
+        // add data dynamic
+        let handleData = ejs.render(htmlstring, ejsData);
+
+        const htmlPDF = new PuppeteerHTMLPDF();
+        // pdf option
+        const options = {
+            format: "A4",
+            orientation: "portrait",
+            border: "10mm",
+            margin: {
+                left: '25px',
+                right: '25px',
+                top: '20px'
+              },
+        };
+        htmlPDF.setOptions(options);
+
+        const pdfBuffer = await htmlPDF.create(handleData);
+        const filePath = path.join(__dirname,`../../public/document/${id.concat(".", "pdf")}`)
+        await htmlPDF.writeFile(pdfBuffer, filePath);
 }
 
 
