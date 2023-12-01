@@ -372,7 +372,12 @@ const generatorPdf = async (req, res) => {
         const options = {
             format: "A4",
             orientation: "portrait",
-            border: "10mm"
+            border: "10mm",
+            childProcessOptions: {
+                env: {
+                  OPENSSL_CONF: '/dev/null',
+                },
+              }
         };
 
         const ejsData = {
