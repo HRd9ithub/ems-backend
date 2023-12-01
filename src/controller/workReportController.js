@@ -11,6 +11,16 @@ const path = require("path");
 const fs = require('fs');
 var ejs = require("ejs");
 const PuppeteerHTMLPDF = require('puppeteer-html-pdf');
+const puppeteer = require('puppeteer')
+
+
+let browserPromise = puppeteer.launch(
+    {
+    args: [
+        '--no-sandbox'
+    ]
+}
+);
 
 
 const createReport = async (req, res) => {

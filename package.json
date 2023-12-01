@@ -26,6 +26,7 @@
     "nodemon": "^3.0.1",
     "otp-generator": "^4.0.1",
     "phantomjs-prebuilt": "^2.1.16",
+    "puppeteer": "^21.5.2",
     "puppeteer-html-pdf": "^3.0.2",
     "swagger-ui-express": "^5.0.0",
     "yamljs": "^0.3.0"
