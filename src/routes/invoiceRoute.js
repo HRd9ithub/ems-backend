@@ -1,0 +1,39 @@
+const {Router} = require("express");
+const { check } = require("express-validator");
+const Auth = require("../middlewares/authtication");
+const { createInvoice, updateInvoice, getSingleInvoice, getInvoice } = require("../controller/invoiceController");
+const invoice = require("../models/invoiceSchema");
+const { invoicePermission } = require("../middlewares/permission");
+
+const route = Router();
+
+const formValidation = [
+    check("invoiceId","Invoice Id is field required").notEmpty().custom(async (invoiceId, { req }) => {
+        const data = await invoice.findOne({ invoiceId: { $regex: new RegExp('^' + req.body.invoiceId, 'i') } })
+
+        if (invoiceId && data && data._id != req.params.id) {
+            throw new Error("Invoice Id already exists.")
+        }
+    }),
+    check("issue_date", "Invalid issue Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: "YYYY-MM-DD" }),
+    check('clientId', "Client id is Required.").isMongoId(),
+    check('userId', "User id is Required.").isMongoId(),
+    check('totalAmount', "totalAmount is Required.").notEmpty(),
+    check('currency', "currency is Required.").notEmpty(),
+    check('tableData', "tableData is Required.").isArray(),
+]
+
+// add route
+route.post("/",Auth,formValidation,createInvoice);
+
+// update route
+route.put("/:id",Auth,formValidation,updateInvoice);
+
+// single data route
+route.get("/:id",Auth,getSingleInvoice);
+
+//  data route
+route.get("/",Auth,invoicePermission, getInvoice);
+
+
+module.exports = route;

@@ -25,6 +25,9 @@ const activityRoute = require('./routes/activityRoute')
 const passwordRoute = require('./routes/passwordRoute')
 const attendanceRoute = require('./routes/attendanceRoute');
 const userRoute = require("./routes/userRoute");
+const invoiceRoute = require("./routes/invoiceRoute");
+const invoiceClientRoute = require('./routes/invoiceClientRoute');
+const invoiceAccountRoute = require('./routes/invoiceAccountRoute');
 
 // add database
 const connectDB = require("./DB/connection");
@@ -33,7 +36,12 @@ const app = express();
 
 const port = process.env.PORT || 8000
 
-app.use(cors())
+app.use(cors({
+   "origin": process.env.RESET_PASSWORD_URL,
+   "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+   "preflightContinue": false,
+   "optionsSuccessStatus": 204
+ }));
 
 app.use(bodyParser.json())
 
@@ -72,6 +80,9 @@ app.use('/api/report_request', ReportRequestRoute)
 app.use('/api/activity', activityRoute)
 app.use('/api/password', passwordRoute);
 app.use('/api/attendance', attendanceRoute)
+app.use('/api/invoice/client', invoiceClientRoute)
+app.use('/api/invoice/account', invoiceAccountRoute)
+app.use('/api/invoice', invoiceRoute)
 
 app.all("*", (req, res, next) => {
    let err = new Error(`Can't find ${req.originalUrl} on the server.`);
