@@ -305,4 +305,27 @@ const attendancePermission = async (req, res, next) => {
     }
 }
 
-module.exports = { userPermission, passwordPermission, rolePermission, projectPermission, activityPermission, attendancePermission, reportPermission, designationtPermission, documentPermission, leavePermission, leaveTypePermission, holidayPermission, timesheetPermission }
+// * ================== attendance route check permission =========================
+const invoicePermission = async (req, res, next) => {
+    try {
+        let permission = await getRoleData(req.user.role_id, "invoice");
+
+        req.permissions = permission;
+
+        if (req.method === "POST" && req.baseUrl == "/api/attendance") {
+            permission.permissions.create !== 0 ? next() : res.status(403).json({ message: "You do not have permission to create attendance." })
+        } else if (req.method === "GET" && req.baseUrl == "/api/invoice") {
+            if (req.method === "GET" && req.route.path == "/regulation/:id") {
+                permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to listing attendance to the attendance request Data. please contact admin." })
+            }else{
+                permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing invoice to the invoice Data. please contact admin." })
+            }
+        }  else if (req.method === "PUT") {
+            permission.permissions.update !== 0 ? next() : res.status(403).json({ message: "You do not have permission to update attendance." })
+        }
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
+
+module.exports = { userPermission, passwordPermission, rolePermission, invoicePermission, projectPermission, activityPermission, attendancePermission, reportPermission, designationtPermission, documentPermission, leavePermission, leaveTypePermission, holidayPermission, timesheetPermission }
