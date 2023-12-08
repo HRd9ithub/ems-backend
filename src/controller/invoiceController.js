@@ -22,8 +22,9 @@ const createInvoice = async (req, res) => {
 
         await invoice_table.deleteMany({ invoiceId });
 
+
         // table create
-        tableData.forEach(async (element) => {
+        JSON.parse(tableData).forEach(async (element) => {
             await invoice_table.create({
                 itemName: element.itemName,
                 rate: element.rate,
@@ -32,6 +33,12 @@ const createInvoice = async (req, res) => {
                 invoiceId: invoiceId
             });
         });
+
+        let fileUrl = [];
+
+        if (req.files.image !== undefined) {
+            fileUrl = req.files.image.map(val => "uploads/" + val.filename);
+        }
 
         // invoice create
         const response = await invoice.create({
@@ -45,7 +52,7 @@ const createInvoice = async (req, res) => {
             signImage,
             note,
             currency,
-            attchmentFile,
+            attchmentFile : fileUrl,
             status
         })
 
@@ -213,7 +220,7 @@ const getSingleInvoice = async (req, res) => {
 //  data get
 const getInvoice = async (req, res) => {
     try {
-        const {startDate,endDate,id} = req.query;
+        const { startDate, endDate, id } = req.query;
 
         const result = await invoice.aggregate([
             {
@@ -236,8 +243,8 @@ const getInvoice = async (req, res) => {
                 }
             },
             {
-                $match : {
-                    "invoiceClient._id" : !id ? {$nin : []} : { $eq : new mongoose.Types.ObjectId(id)}
+                $match: {
+                    "invoiceClient._id": !id ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id) }
                 }
             },
             {
@@ -257,7 +264,7 @@ const getInvoice = async (req, res) => {
             message: "success",
             success: true,
             data: decryptResult,
-            permissions : req.permissions
+            permissions: req.permissions
         })
     } catch (error) {
         return res.status(500).json({

@@ -10,11 +10,6 @@ mongoose.set('toJSON', { getters: true });
 
 
 const invoiceClientSchema = new Schema({
-    client_id: {
-        type: String,
-        required: true,
-        unique: true
-    },
     first_name: {
         type: String,
         required: true,

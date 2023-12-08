@@ -4,6 +4,7 @@ const Auth = require("../middlewares/authtication");
 const { createInvoice, updateInvoice, getSingleInvoice, getInvoice } = require("../controller/invoiceController");
 const invoice = require("../models/invoiceSchema");
 const { invoicePermission } = require("../middlewares/permission");
+const { importDocument, attchmentFile } = require("../middlewares/documentUpload");
 
 const route = Router();
 
@@ -19,12 +20,11 @@ const formValidation = [
     check('clientId', "Client id is Required.").isMongoId(),
     check('userId', "User id is Required.").isMongoId(),
     check('totalAmount', "totalAmount is Required.").notEmpty(),
-    check('currency', "currency is Required.").notEmpty(),
-    check('tableData', "tableData is Required.").isArray(),
+    check('tableData', "tableData is Required.").notEmpty(),
 ]
 
 // add route
-route.post("/",Auth,formValidation,createInvoice);
+route.post("/",Auth,attchmentFile,formValidation,createInvoice);
 
 // update route
 route.put("/:id",Auth,formValidation,updateInvoice);

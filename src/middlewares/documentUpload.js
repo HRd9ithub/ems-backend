@@ -12,10 +12,11 @@ const documentUpload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
         var ext = path.extname(file.originalname)
-        if (ext === '.png' || ext === '.jpg' || ext === '.svg' || ext === '.jpeg' || ext === '.pdf' || ext === '.doc') {
+        console.log('file.originalname :>> ', file.originalname);
+        if (ext === '.png' || ext === '.jpg' || ext === '.svg' || ext === '.jpeg' || ext === '.pdf' || ext === '.doc' || ext === '.csv') {
             cb(null, true);
         } else {
-            return cb(new Error('The file is invalid or the image type is not allowed. Allowed types: SVG, jpeg, jpg, png, pdf, doc'))
+            return cb(new Error('The file is invalid or the image type is not allowed. Allowed types: SVG, jpeg, jpg, png, pdf, doc, csv'))
         }
     }
 });
@@ -30,4 +31,8 @@ const uploadSingleImage = documentUpload.fields([
 ]);
 const importDocument = documentUpload.single("image");
 
-module.exports = { uploadSingleImage, importDocument }
+const attchmentFile = documentUpload.fields([
+    { name: 'image' }
+])
+
+module.exports = { uploadSingleImage, importDocument,attchmentFile }
