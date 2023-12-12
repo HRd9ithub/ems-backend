@@ -37,7 +37,7 @@ const createInvoice = async (req, res) => {
         let fileUrl = [];
 
         if (req.files.image !== undefined) {
-            fileUrl = req.files.image.map(val => "uploads/" + val.filename);
+            fileUrl = req.files.image.map(val => val.filename);
         }
 
         // invoice create
@@ -52,7 +52,7 @@ const createInvoice = async (req, res) => {
             signImage,
             note,
             currency,
-            attchmentFile : fileUrl,
+            attchmentFile: fileUrl,
             status
         })
 
@@ -83,12 +83,12 @@ const updateInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        const { invoiceId, issue_date, due_date, extra_field, clientId, userId, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field, clientId, userId, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
 
         // table create
-        tableData.forEach(async (element) => {
+        JSON.parse(tableData).forEach(async (element) => {
             await invoice_table.create({
                 itemName: element.itemName,
                 rate: element.rate,
@@ -98,6 +98,21 @@ const updateInvoice = async (req, res) => {
             });
         });
 
+        let fileUrl = [];
+
+        if (typeof (req.body.image) == 'string' && req.body.image !== undefined) {
+            fileUrl.push(req.body.image)
+        } else if (typeof (req.body.image) == 'object') {
+            fileUrl.push(...req.body.image)
+        }
+
+        if (req.files.image !== undefined) {
+            req.files.image.map(val => fileUrl.push(val.filename));
+        }
+
+        if (note == '<p><br></p>' || note === 'null') {
+            note = "";
+        }
         // invoice create
         const response = await invoice.findByIdAndUpdate({ _id: req.params.id }, {
             invoiceId,
@@ -109,8 +124,7 @@ const updateInvoice = async (req, res) => {
             totalAmount,
             signImage,
             note,
-            currency,
-            attchmentFile,
+            attchmentFile: fileUrl,
             status
         })
 

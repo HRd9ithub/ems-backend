@@ -17,17 +17,17 @@ const formValidation = [
         }
     }),
     check("issue_date", "Invalid issue Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: "YYYY-MM-DD" }),
-    check('clientId', "Client id is Required.").isMongoId(),
-    check('userId', "User id is Required.").isMongoId(),
-    check('totalAmount', "totalAmount is Required.").notEmpty(),
-    check('tableData', "tableData is Required.").notEmpty(),
+    check('clientId', "Client id is a required field.").isMongoId(),
+    check('userId', "User id is a required field.").isMongoId(),
+    check('totalAmount', "total amount is a required field.").notEmpty(),
+    check('tableData', "table data is a required field.").notEmpty(),
 ]
 
 // add route
 route.post("/",Auth,attchmentFile,formValidation,createInvoice);
 
 // update route
-route.put("/:id",Auth,formValidation,updateInvoice);
+route.put("/:id",Auth,attchmentFile,formValidation,updateInvoice);
 
 // single data route
 route.get("/:id",Auth,getSingleInvoice);

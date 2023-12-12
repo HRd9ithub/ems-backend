@@ -73,13 +73,12 @@ const updateAccount = async (req, res) => {
 const getSingleAccount = async(req,res) => {
     try {
         const {invoiceId} = req.params;
+        
+        const result = await invoice_account.findOne({invoice_id  : invoiceId});
 
-        const result = await invoice_account.findOne({invoice_id  : invoiceId})
-         
-        return res.status(200).json({
-            message: "Data fetch successfully.",
-            success: true,
-            data : {
+        let decryptResult = "";
+        if(result){
+            decryptResult = {
                 bank: decryptData(result.bank),
                 account_number: decryptData(result.account_number),
                 ifsc_code: decryptData(result.ifsc_code),
@@ -89,6 +88,12 @@ const getSingleAccount = async(req,res) => {
                 createdAt: result.createdAt,
                 _id : result._id
             }
+        }
+         
+        return res.status(200).json({
+            message: "Data fetch successfully.",
+            success: true,
+            data : decryptResult
         })
     } catch (error) {
         res.status(500).json({

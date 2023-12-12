@@ -92,27 +92,27 @@ const defaultUser = async () => {
             permissions: []
         });
 
-        // const response = await roleData.save();
-        // if (response) {
-        //     const defaultUser = {
-        //         employee_id: "D9-01",
-        //         first_name: encryptData("Admin"),
-        //         last_name: encryptData("Admin"),
-        //         email: "hardik.d9ithub@gmail.com",
-        //         phone: encryptData("7894561230"),
-        //         joining_date: "2023-10-01",
-        //         status: "Active",
-        //         gender: encryptData("Male"),
-        //         password: "Admin@123",
-        //         role_id: response._id,
-        //     }
+        const response = await roleData.save();
+        if (response) {
+            const defaultUser = {
+                employee_id: "D9-01",
+                first_name: encryptData("Admin"),
+                last_name: encryptData("Admin"),
+                email: "hardik.d9ithub@gmail.com",
+                phone: encryptData("7894561230"),
+                joining_date: "2023-10-01",
+                status: "Active",
+                gender: encryptData("Male"),
+                password: "Admin@123",
+                role_id: response._id,
+            }
 
-            // const userData = await user.create(defaultUser)
-            // if (userData) {
-            //     console.log("Successfully created.")
-            // }
+            const userData = await user.create(defaultUser)
+            if (userData) {
+                console.log("Successfully created.")
+            }
             await menu.insertMany(menuData)
-        // }
+        }
     } catch (error) {
         console.log('error', error)
     }
