@@ -18,10 +18,9 @@ const createInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        const { invoiceId, issue_date, due_date, extra_field, clientId, userId, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field, clientId, userId, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
-
 
         // table create
         JSON.parse(tableData).forEach(async (element) => {
@@ -38,6 +37,10 @@ const createInvoice = async (req, res) => {
 
         if (req.files.image !== undefined) {
             fileUrl = req.files.image.map(val => val.filename);
+        }
+
+        if (note == '<p><br></p>' || note === 'null') {
+            note = "";
         }
 
         // invoice create
@@ -220,7 +223,8 @@ const getSingleInvoice = async (req, res) => {
         return res.status(200).json({
             message: "success",
             success: true,
-            data: decryptResult
+            data: decryptResult,
+            permissions: req.permissions
         })
     } catch (error) {
         return res.status(500).json({
@@ -239,6 +243,7 @@ const getInvoice = async (req, res) => {
         const result = await invoice.aggregate([
             {
                 $match: {
+                    deleteAt: { $exists: false },
                     $and: [
                         { "issue_date": { $gte: new Date(startDate) } },
                         { "issue_date": { $lte: new Date(endDate) } },
@@ -265,6 +270,19 @@ const getInvoice = async (req, res) => {
                 $lookup: {
                     from: "invoice_tables", localField: "invoiceId", foreignField: "invoiceId", as: "productDetails"
                 }
+            },
+            {
+                $project: {
+                    invoiceId: 1,
+                    issue_date: 1,
+                    totalAmount: 1,
+                    status: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    productDetails: 1,
+                    "invoiceClient.first_name": 1,
+                    "invoiceClient.last_name": 1
+                }
             }
         ])
 
@@ -289,4 +307,31 @@ const getInvoice = async (req, res) => {
     }
 }
 
-module.exports = { createInvoice, updateInvoice, getSingleInvoice, getInvoice }
+// delete invoice
+const deleteInvoice = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await invoice.findByIdAndUpdate({ _id: id }, { $set: { deleteAt: new Date() } });
+
+        if (!result) {
+            return res.status(404).json({
+                message: "Record not found.",
+                success: false
+            })
+        } else {
+            return res.status(200).json({
+                message: "Data Deleted successfully.",
+                success: true
+            })
+        }
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || "Interner server error",
+            success: false,
+            statusCode: 500
+        })
+    }
+}
+
+module.exports = { createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice }

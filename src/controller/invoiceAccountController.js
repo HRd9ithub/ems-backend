@@ -93,7 +93,8 @@ const getSingleAccount = async(req,res) => {
         return res.status(200).json({
             message: "Data fetch successfully.",
             success: true,
-            data : decryptResult
+            data : decryptResult,
+            permissions: req.permissions
         })
     } catch (error) {
         res.status(500).json({

@@ -2,6 +2,7 @@ const express = require("express")
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
 const { createAccount, updateAccount, getSingleAccount } = require("../controller/invoiceAccountController");
+const { invoicePermission } = require("../middlewares/permission");
 const route = express.Router();
 
 const accountValidation = [
@@ -29,7 +30,7 @@ route.post('/', Auth,accountValidation, createAccount);
 route.put('/:id', Auth,accountValidation, updateAccount);
 
 // account detail get data single
-route.get('/:invoiceId', Auth, getSingleAccount);
+route.get('/:invoiceId', Auth,invoicePermission, getSingleAccount);
 
 
 module.exports = route

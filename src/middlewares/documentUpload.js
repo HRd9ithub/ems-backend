@@ -12,7 +12,6 @@ const documentUpload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
         var ext = path.extname(file.originalname)
-        console.log('file.originalname :>> ', file.originalname);
         if (ext === '.png' || ext === '.jpg' || ext === '.svg' || ext === '.jpeg' || ext === '.pdf' || ext === '.doc' || ext === '.csv') {
             cb(null, true);
         } else {

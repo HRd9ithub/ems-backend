@@ -78,7 +78,8 @@ const getClientName = async(req,res) => {
         return res.status(200).json({
             message : "success",
             success : true,
-            data : response.map((val) => ({name : val.first_name.concat(" ",val.last_name), _id : val._id}))
+            data : response.map((val) => ({name : val.first_name.concat(" ",val.last_name), _id : val._id})),
+            permissions: req.permissions
         })
         
     } catch (error) {

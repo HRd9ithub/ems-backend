@@ -1,7 +1,7 @@
 const {Router} = require("express");
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
-const { createInvoice, updateInvoice, getSingleInvoice, getInvoice } = require("../controller/invoiceController");
+const { createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice } = require("../controller/invoiceController");
 const invoice = require("../models/invoiceSchema");
 const { invoicePermission } = require("../middlewares/permission");
 const { importDocument, attchmentFile } = require("../middlewares/documentUpload");
@@ -24,16 +24,19 @@ const formValidation = [
 ]
 
 // add route
-route.post("/",Auth,attchmentFile,formValidation,createInvoice);
+route.post("/",Auth,invoicePermission,attchmentFile,formValidation,createInvoice);
 
 // update route
-route.put("/:id",Auth,attchmentFile,formValidation,updateInvoice);
+route.put("/:id",Auth,invoicePermission,attchmentFile,formValidation,updateInvoice);
 
 // single data route
-route.get("/:id",Auth,getSingleInvoice);
+route.get("/:id",Auth,invoicePermission,getSingleInvoice);
 
 //  data route
 route.get("/",Auth,invoicePermission, getInvoice);
+
+//  delete route
+route.delete("/:id",Auth,invoicePermission, deleteInvoice);
 
 
 module.exports = route;

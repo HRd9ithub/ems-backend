@@ -4,6 +4,7 @@ const invoice_client = require("../models/invoiceClientSchema");
 const Auth = require("../middlewares/authtication");
 const { createInvoiceClient, getClientName, getSingleClient, updateInvoiceClient, checkEmail } = require("../controller/invoiceClientController");
 const profile_image = require("../middlewares/ImageProfile");
+const { invoicePermission } = require("../middlewares/permission");
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.post('/',Auth,profile_image,formValidation,createInvoiceClient);
 router.post('/email',Auth,checkEmail);
 
 // get name route
-router.get('/',Auth,getClientName);
+router.get('/',Auth,invoicePermission,getClientName);
 
 // single data
 router.get('/:id',Auth,getSingleClient);
