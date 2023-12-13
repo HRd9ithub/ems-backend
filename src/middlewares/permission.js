@@ -308,21 +308,23 @@ const attendancePermission = async (req, res, next) => {
 // * ================== attendance route check permission =========================
 const invoicePermission = async (req, res, next) => {
     try {
-        let permission = await getRoleData(req.user.role_id, "invoice");
+        let permission = await getRoleData(req.user.role_id, "invoices");
 
         req.permissions = permission;
 
-        if (req.method === "POST" && req.baseUrl == "/api/attendance") {
-            permission.permissions.create !== 0 ? next() : res.status(403).json({ message: "You do not have permission to create attendance." })
-        } else if (req.method === "GET" && req.baseUrl == "/api/invoice") {
-            if (req.method === "GET" && req.route.path == "/regulation/:id") {
-                permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to listing attendance to the attendance request Data. please contact admin." })
-            }else{
-                permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing invoice to the invoice Data. please contact admin." })
-            }
-        }  else if (req.method === "PUT") {
-            permission.permissions.update !== 0 ? next() : res.status(403).json({ message: "You do not have permission to update attendance." })
-        }
+        if (req.method === "GET" && req.baseUrl == "/api/invoice") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to list invoices to the invoice Data. please contact admin." })
+        } else if (req.method === "GET" && req.baseUrl == "/api/invoice/account") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to the invoice Data. please contact admin." })
+        } else if (req.method === "GET" && req.baseUrl == "/api/invoice/client") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "" })
+        } else if (req.method === "POST") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to create an invoice to the invoice Data. please contact admin." })
+        } else if (req.method === "PUT") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to update an invoice to the invoice Data. please contact admin." })
+        } else if (req.method === "DELETE") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to delete an invoice from the invoice Data. please contact admin." })
+        } 
     } catch (error) {
         return res.status(500).json({ message: error.message })
     }

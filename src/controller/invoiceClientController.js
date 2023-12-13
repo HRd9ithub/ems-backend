@@ -16,7 +16,7 @@ const createInvoiceClient = async (req, res) => {
         }
 
         for (const key in req.body) {
-            if (key !== "client_id" && key !== "email" && key !== "profile_image") {
+            if (key !== "email" && key !== "profile_image") {
                 req.body[key] = encryptData(req.body[key])
             }
         }
@@ -25,7 +25,8 @@ const createInvoiceClient = async (req, res) => {
         const response = await invoice_client.create(req.body);
         return res.status(201).json({
             message: "Data added successfully.",
-            success: true
+            success: true,
+            id : response._id
         })
     } catch (error) {
         res.status(500).json({
@@ -49,7 +50,7 @@ const updateInvoiceClient = async (req, res) => {
         }
 
         for (const key in req.body) {
-            if (key !== "client_id" && key !== "email" && key !== "profile_image") {
+            if (key !== "email" && key !== "profile_image") {
                 req.body[key] = encryptData(req.body[key])
             }
         }
@@ -58,7 +59,8 @@ const updateInvoiceClient = async (req, res) => {
         const response = await invoice_client.findByIdAndUpdate({_id: id},req.body);
         return res.status(200).json({
             message: "Data updated successfully.",
-            success: true
+            success: true,
+            id :response._id
         })
     } catch (error) {
         res.status(500).json({
@@ -76,12 +78,13 @@ const getClientName = async(req,res) => {
         return res.status(200).json({
             message : "success",
             success : true,
-            data : response.map((val) => ({name : val.first_name.concat(" ",val.last_name), _id : val._id}))
+            data : response.map((val) => ({name : val.first_name.concat(" ",val.last_name), _id : val._id})),
+            permissions: req.permissions
         })
         
     } catch (error) {
         return res.status(500).json({
-            message :  "Interner server error.",
+            message :  error.message || "Interner server error.",
             success : false
         })
     }
@@ -107,4 +110,27 @@ const getSingleClient = async(req,res) => {
     }
 }
 
-module.exports = { createInvoiceClient, getClientName, getSingleClient, updateInvoiceClient };
+const checkEmail = async(req,res) => {
+    try {
+        const data = await invoice_client.findOne({ email: { $regex: new RegExp('^' + req.body.email, 'i') } })
+        
+        if (data) {
+            return res.status(422).json({
+                error : "Email address already exists.",
+                success : false
+            })
+        }else{
+           return res.status(200).json({
+               message : "Email address not already exists.",
+               success : true
+           })
+       }
+    } catch (error) {
+        return res.status(500).json({
+            message : error.message || "Interner server error.",
+            success : false
+        })
+    }
+}
+
+module.exports = { createInvoiceClient, getClientName, getSingleClient, updateInvoiceClient, checkEmail };

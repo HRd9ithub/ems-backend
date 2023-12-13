@@ -14,7 +14,7 @@ const invoiceSchema = new Schema({
         type: Date,
     },
     extra_field: {
-        type: Array,
+        type: String,
     },
     clientId:{
         type : Schema.Types.ObjectId,
@@ -33,10 +33,6 @@ const invoiceSchema = new Schema({
     },
     note : {
         type: String,
-    },
-    currency : {
-        type: String,
-        required: true
     },
     attchmentFile : {
         type : Array
