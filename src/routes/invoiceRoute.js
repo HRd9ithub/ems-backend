@@ -19,8 +19,10 @@ const formValidation = [
     check("issue_date", "Invalid issue Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: "YYYY-MM-DD" }),
     check('clientId', "Client id is a required field.").isMongoId(),
     check('userId', "User id is a required field.").isMongoId(),
-    check('totalAmount', "total amount is a required field.").notEmpty(),
-    check('tableData', "table data is a required field.").notEmpty(),
+    check('totalAmount', "Total amount is a required field.").notEmpty(),
+    check('tableData', "Item Name is a required field.").notEmpty(),
+    check('currency', "Currency is a required field.").notEmpty(),
+    check('currencyValue', "Currency Value is a required field.").notEmpty(),
 ]
 
 // add route

@@ -1,10 +1,10 @@
 const { model, Schema } = require("mongoose");
 
 const invoiceSchema = new Schema({
-    invoiceId : {
+    invoiceId: {
         type: String,
         required: true,
-        unique : true
+        unique: true
     },
     issue_date: {
         type: Date,
@@ -16,34 +16,48 @@ const invoiceSchema = new Schema({
     extra_field: {
         type: String,
     },
-    clientId:{
-        type : Schema.Types.ObjectId,
-        ref : "invoice_client"
+    clientId: {
+        type: Schema.Types.ObjectId,
+        ref: "invoice_client"
     },
-    userId:{
-        type : Schema.Types.ObjectId,
-        ref : "user"
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: "user"
     },
-    totalAmount : {
+    totalAmount: {
         type: String,
         required: true
     },
-    signImage : {
+    currency: {
+        type: String,
+        required: true
+    },
+    currencyValue: {
+        type: String,
+        required: true
+    },
+    terms: {
+        type: Array,
+    },
+    contact: {
         type: String,
     },
-    note : {
+    signImage: {
         type: String,
     },
-    attchmentFile : {
-        type : Array
+    note: {
+        type: String,
+    },
+    attchmentFile: {
+        type: Array
     },
     status: {
-        type : String,
-        default : "Unpaid",
-        enum : ["Unpaid","Paid", "Draft"]
+        type: String,
+        default: "Unpaid",
+        enum: ["Unpaid", "Paid", "Draft"]
     },
-    deleteAt :{
-        type : Date
+    deleteAt: {
+        type: Date
     }
 },
     {

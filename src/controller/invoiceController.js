@@ -18,7 +18,7 @@ const createInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field, clientId, userId, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
 
@@ -35,7 +35,7 @@ const createInvoice = async (req, res) => {
 
         let fileUrl = [];
 
-        if (req.files.image !== undefined) {
+        if (req.files?.image !== undefined) {
             fileUrl = req.files.image.map(val => val.filename);
         }
 
@@ -55,8 +55,11 @@ const createInvoice = async (req, res) => {
             signImage,
             note,
             currency,
+            currencyValue,
             attchmentFile: fileUrl,
-            status
+            status,
+            terms,
+            contact
         })
 
         return res.status(201).json({
@@ -66,6 +69,7 @@ const createInvoice = async (req, res) => {
         })
 
     } catch (error) {
+        console.log(error)
         return res.status(500).json({
             message: error.message || "Interner server error.",
             success: false
@@ -86,7 +90,7 @@ const updateInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field, clientId, userId, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
 
@@ -128,7 +132,11 @@ const updateInvoice = async (req, res) => {
             signImage,
             note,
             attchmentFile: fileUrl,
-            status
+            status,
+            currency,
+            currencyValue,
+            terms,
+            contact
         })
 
         return res.status(200).json({
@@ -280,6 +288,8 @@ const getInvoice = async (req, res) => {
                     createdAt: 1,
                     updatedAt: 1,
                     productDetails: 1,
+                    currency : 1,
+                    currencyValue : 1,
                     "invoiceClient.first_name": 1,
                     "invoiceClient.last_name": 1
                 }
