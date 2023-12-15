@@ -48,6 +48,15 @@ const invoiceSchema = new Schema({
     note: {
         type: String,
     },
+    payment_date: {
+        type: Date,
+    },
+    payment_method: {
+        type: String,
+    },
+    payment_note: {
+        type: String,
+    },
     attchmentFile: {
         type: Array
     },

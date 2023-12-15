@@ -324,7 +324,9 @@ const invoicePermission = async (req, res, next) => {
             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to update an invoice to the invoice Data. please contact admin." })
         } else if (req.method === "DELETE") {
             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to delete an invoice from the invoice Data. please contact admin." })
-        } 
+        } else if (req.method === "PATCH") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to restore an invoice to the invoice Data. please contact admin." })
+        }
     } catch (error) {
         return res.status(500).json({ message: error.message })
     }
