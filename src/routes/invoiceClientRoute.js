@@ -2,9 +2,9 @@ const {Router} = require("express");
 const { check } = require("express-validator");
 const invoice_client = require("../models/invoiceClientSchema");
 const Auth = require("../middlewares/authtication");
-const { createInvoiceClient, getClientName, getSingleClient, updateInvoiceClient, checkEmail } = require("../controller/invoiceClientController");
+const { createInvoiceClient, getClientName, getSingleClient, updateInvoiceClient, checkEmail, getClient, DeleteClient, restoreClient } = require("../controller/invoiceClientController");
 const profile_image = require("../middlewares/ImageProfile");
-const { invoicePermission } = require("../middlewares/permission");
+const { clientPermission } = require("../middlewares/permission");
 
 const router = Router();
 
@@ -22,22 +22,32 @@ const formValidation = [
     check('state', "State field is required.").notEmpty(),
     check('city', "City field is required.").notEmpty(),
     check('postcode', "Postcode field is required.").notEmpty(),
-    check('address', "Address field is required.").notEmpty()
+    check('address', "Address field is required.").notEmpty(),
 ]
 
 // add route
-router.post('/',Auth,profile_image,formValidation,createInvoiceClient);
+router.post('/',Auth,clientPermission,profile_image,formValidation,createInvoiceClient);
 
 // email check route
 router.post('/email',Auth,checkEmail);
 
 // get name route
-router.get('/',Auth,invoicePermission,getClientName);
+router.get('/name',Auth,clientPermission,getClientName);
+
+// get data route
+router.get('/',Auth,clientPermission,getClient);
 
 // single data
 router.get('/:id',Auth,getSingleClient);
 
 // update data
-router.put('/:id',Auth,profile_image,formValidation,updateInvoiceClient);
+router.put('/:id',Auth,clientPermission,profile_image,formValidation,updateInvoiceClient);
+
+// restore route
+router.patch("/:id",Auth,clientPermission,restoreClient);
+
+// delete data
+router.delete('/:id',Auth,clientPermission, DeleteClient);
+
 
 module.exports = router;
