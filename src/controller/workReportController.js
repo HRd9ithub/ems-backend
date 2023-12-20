@@ -172,6 +172,17 @@ const getReport = async (req, res) => {
             },
             { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
             {
+                $match: {
+                    // "user.status": "Active",
+                    "user.delete_at": { $exists: false },
+                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { "user.leaveing_date": { $eq: null } },
+                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+            },
+            {
                 $project: {
                     userId: "$_id.userId",
                     totalHours: "$_id.totalHours",
