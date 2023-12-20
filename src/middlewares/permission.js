@@ -305,19 +305,17 @@ const attendancePermission = async (req, res, next) => {
     }
 }
 
-// * ================== attendance route check permission =========================
+// * ================== invoice route check permission =========================
 const invoicePermission = async (req, res, next) => {
     try {
         let permission = await getRoleData(req.user.role_id, "invoices");
 
         req.permissions = permission;
 
-        if (req.method === "GET" && req.baseUrl == "/api/invoice") {
+        if (req.method === "GET" && req.baseUrl == "/api/invoice" || req.baseUrl == "/api/invoice/:id") {
             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to list invoices to the invoice Data. please contact admin." })
         } else if (req.method === "GET" && req.baseUrl == "/api/invoice/account") {
             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to the invoice Data. please contact admin." })
-        } else if (req.method === "GET" && req.baseUrl == "/api/invoice/client") {
-            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "" })
         } else if (req.method === "POST") {
             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to create an invoice to the invoice Data. please contact admin." })
         } else if (req.method === "PUT") {
@@ -332,4 +330,28 @@ const invoicePermission = async (req, res, next) => {
     }
 }
 
-module.exports = { userPermission, passwordPermission, rolePermission, invoicePermission, projectPermission, activityPermission, attendancePermission, reportPermission, designationtPermission, documentPermission, leavePermission, leaveTypePermission, holidayPermission, timesheetPermission }
+
+// * ================== client route check permission =========================
+const clientPermission = async (req, res, next) => {
+    try {
+        let permission = await getRoleData(req.user.role_id, "clients");
+
+        req.permissions = permission;
+
+        if (req.method === "GET" && req.baseUrl == "/api/invoice/client" || req.baseUrl == "/api/invoice/client/name") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to list clients to the client Data. please contact admin." })
+        } else if (req.method === "POST") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to create an client to the client Data. please contact admin." })
+        } else if (req.method === "PUT") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to update an client to the client Data. please contact admin." })
+        } else if (req.method === "DELETE") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to delete an client from the client Data. please contact admin." })
+        } else if (req.method === "PATCH") {
+            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to restore an client to the client Data. please contact admin." })
+        }
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
+
+module.exports = { userPermission, passwordPermission, rolePermission,clientPermission, invoicePermission, projectPermission, activityPermission, attendancePermission, reportPermission, designationtPermission, documentPermission, leavePermission, leaveTypePermission, holidayPermission, timesheetPermission }

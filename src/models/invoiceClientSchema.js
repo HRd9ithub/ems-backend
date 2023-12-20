@@ -1,6 +1,7 @@
 const { model, Schema, default: mongoose } = require("mongoose");
 const encryptData = require("../helper/encrptData");
 const decryptData = require("../helper/decryptData");
+const user = require("./userSchema");
 
 function invoiceDataDecrypt(data) {
     return decryptData(data);
@@ -54,6 +55,13 @@ const invoiceClientSchema = new Schema({
     address: {
         type: String,
         get: invoiceDataDecrypt
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref : user
+    },
+    deleteAt: {
+        type: Date,
     },
 },
     {
