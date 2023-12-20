@@ -256,6 +256,7 @@ const getInvoice = async (req, res) => {
                         { "issue_date": { $gte: new Date(startDate) } },
                         { "issue_date": { $lte: new Date(endDate) } },
                     ],
+                    userId : new mongoose.Types.ObjectId(req.user._id)
                     // "status": JSON.parse(status).length === 0  ? { $nin:JSON.parse(status) } : { $in: JSON.parse(status) }
                 }
             },
