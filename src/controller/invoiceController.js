@@ -302,7 +302,7 @@ const getInvoice = async (req, res) => {
         const decryptResult = result.map((val) => {
             return {
                 ...val,
-                invoiceClient: { "name": decryptData(val.invoiceClient.first_name).concat(" ", decryptData(val.invoiceClient.last_name)) }
+                invoiceClient: { "name": decryptData(val.invoiceClient?.first_name)?.concat(" ", decryptData(val.invoiceClient?.last_name)) }
             }
         })
         return res.status(200).json({
