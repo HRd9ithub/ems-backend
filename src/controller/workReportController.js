@@ -9,7 +9,10 @@ const { default: mongoose } = require("mongoose");
 const moment = require("moment");
 const path = require("path");
 const fs = require('fs');
-const pdf = require("pdf-creator-node");
+const ejs = require('ejs');
+// const pdf = require("pdf-creator-node");
+const reportDownloadSchema = require("../models/reportDownloadSchema");
+const { default: puppeteer } = require("puppeteer");
 
 const createReport = async (req, res) => {
     try {
@@ -221,7 +224,7 @@ const generatorPdf = async (req, res) => {
     try {
         let { id, month } = req.body;
         month.concat("-", "1");
-        let date = moment(new Date()).format("YYYY-MM") == month
+        const date = moment(new Date()).format("YYYY-MM") == month
 
         const startDate = moment(month).startOf('month').format('YYYY-MM-DD');
         const endDate = date ? moment(new Date()).format('YYYY-MM-DD') : moment(month).endOf('month').format('YYYY-MM-DD');
@@ -376,57 +379,113 @@ const generatorPdf = async (req, res) => {
             totalHours,
         }
 
-        // read file
-        const html = fs.readFileSync(path.join(__dirname, '../../public/template.html'), "utf8");
-
-        // pdf option
-        const options = {
-            format: "A4",
-            orientation: "portrait",
-            border: "10mm",
-            childProcessOptions: {
-                env: {
-                  OPENSSL_CONF: '/dev/null',
-                },
-              }
-        };
-
-        const ejsData = {
-            reports: Test,
+        const response = await reportDownloadSchema.create({
+            name: userData.first_name.concat(" ", userData.last_name),
             summary: summary,
-            name: userData.first_name.concat(" ", userData.last_name)
-        }
+            reports: Test
+        })
 
-        const pathData = path.join(__dirname, `../../public/document/${id.concat(".", "pdf")}`)
-        const document = {
-            html: html,
-            data: ejsData,
-            path: pathData
-        };
+        return res.status(200).json({ data: Test, success: true, summary: summary, id: response._id })
 
-        pdf.create(document, options)
-            .then((result) => {
-                return res.status(200).json({ data: Test, success: true, summary: summary })
-            })
-            .catch((error) => {
-                return res.status(400).json({ message: 'Something went wrong. please try again.', stack: error.message, success: false });
-            });
+
+        // // read file
+        // const html = fs.readFileSync(path.join(__dirname, '../../public/template.html'), "utf8");
+
+        // // pdf option
+        // const options = {
+        //     format: "A4",
+        //     orientation: "portrait",
+        //     border: "10mm",
+        //     childProcessOptions: {
+        //         env: {
+        //           OPENSSL_CONF: '/dev/null',
+        //         },
+        //       }
+        // };
+
+        // const ejsData = {
+        //     reports: Test,
+        //     summary: summary,
+        //     name: userData.first_name.concat(" ", userData.last_name)
+        // }
+
+        // const pathData = path.join(__dirname, `../../public/document/${id.concat(".", "pdf")}`)
+        // const document = {
+        //     html: html,
+        //     data: ejsData,
+        //     path: pathData
+        // };
+
+        // pdf.create(document, options)
+        //     .then((result) => {
+        //         return res.status(200).json({ data: Test, success: true, summary: summary })
+        //     })
+        //     .catch((error) => {
+        //         return res.status(400).json({ message: 'Something went wrong. please try again.', stack: error.message, success: false });
+        //     });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
 }
 
-
 // dowlonad pdf
 const dowloandReport = async (req, res) => {
     try {
-        let { id } = req.query;
+        const { id } = req.query;
+
+        const data = await reportDownloadSchema.findOne({ _id: id });
+
+        if (!data) {
+            return res.status(404).json({ message: 'Record not found', success: false })
+        }
+
+        const ejsData = {
+            reports: data.reports,
+            summary: data.summary,
+            name: data.name
+        }
+        // get file path
+        const filepath = path.resolve(__dirname, "../../views/reportTable.ejs");
+
+        // read file using fs module
+        const htmlstring = fs.readFileSync(filepath).toString();
+        // add data dynamic
+        const htmlContent = ejs.render(htmlstring, ejsData);
+
+        // Launch a headless browser using puppeteer
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+
+        // Set the content and styles for the PDF
+        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
+
+        // Generate the PDF
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            displayHeaderFooter: false, // Set to false to remove the duplicate head
+            margin: {
+                top: '20px',
+                bottom: '20px',
+                left: '20px',
+                right: '20px',
+            },
+            printBackground: true,
+        });
+
+        // Close the browser
+        await browser.close();
+
+        // Send the generated PDF as a downloadable file
+        const pdfFileName = 'report.pdf';
+        const pdfPath = path.join(__dirname, pdfFileName);
+        // Save the PDF to a file
+        fs.writeFileSync(pdfPath, pdfBuffer);
 
         // * get file path
-        let filepath = path.resolve(__dirname, `../../public/document/${id.concat(".", "pdf")}`);
+        // let filepath = path.resolve(__dirname, `../../public/document/${id.concat(".", "pdf")}`);
 
         // response send for frontend
-        res.download(filepath);
+        res.download(pdfPath)
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }

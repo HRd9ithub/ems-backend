@@ -82,6 +82,11 @@ const menuData = [{
     "name": "Invoices",
     "path": "/invoice",
     "icon": "fa-solid fa-dollar-sign"
+},
+{
+    "name": "Clients",
+    "path": "/client",
+    "icon": "fa-solid fa-dollar-sign"
 }
 ]
 
