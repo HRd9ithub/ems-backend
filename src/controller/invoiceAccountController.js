@@ -7,7 +7,7 @@ const decryptData = require("../helper/decryptData");
 const createAccount = async (req, res) => {
     try {
         const errors = expressValidator.validationResult(req)
-        
+
         const err = errors.array().map((val) => {
             return val.msg
         })
@@ -17,12 +17,12 @@ const createAccount = async (req, res) => {
         }
 
         for (const key in req.body) {
-            if (key !== "invoice_id") {
-                req.body[key] = encryptData(req.body[key])
-            }
+            req.body[key] = encryptData(req.body[key])
         }
 
         const response = await invoice_account.create(req.body);
+        await invoice_account.updateMany({ _id: { $ne : response._id} }, {status : false});
+
         return res.status(201).json({
             message: "Data added successfully.",
             success: true
@@ -38,10 +38,10 @@ const createAccount = async (req, res) => {
 // update data
 const updateAccount = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
 
         const errors = expressValidator.validationResult(req)
-        
+
         const err = errors.array().map((val) => {
             return val.msg
         })
@@ -51,12 +51,13 @@ const updateAccount = async (req, res) => {
         }
 
         for (const key in req.body) {
-            if (key !== "invoice_id") {
+            if(key !== "status"){
                 req.body[key] = encryptData(req.body[key])
             }
         }
+        const response = await invoice_account.findByIdAndUpdate({ _id: id }, req.body);
+        await invoice_account.updateMany({ _id: { $ne : id} }, {status : false});
 
-        const response = await invoice_account.findByIdAndUpdate({_id : id},req.body);
         return res.status(200).json({
             message: "Data updated successfully.",
             success: true
@@ -70,31 +71,34 @@ const updateAccount = async (req, res) => {
 }
 
 // single data get
-const getSingleAccount = async(req,res) => {
+const getSingleAccount = async (req, res) => {
     try {
-        const {invoiceId} = req.params;
-        
-        const result = await invoice_account.findOne({invoice_id  : invoiceId});
+        const { invoiceId } = req.params;
 
-        let decryptResult = "";
-        if(result){
-            decryptResult = {
-                bank: decryptData(result.bank),
-                account_number: decryptData(result.account_number),
-                ifsc_code: decryptData(result.ifsc_code),
-                branch_name: decryptData(result.branch_name),
-                name: decryptData(result.name),
-                invoice_id: result.invoice_id,
-                createdAt: result.createdAt,
-                _id : result._id
-            }
-        }
-         
+        const result = await invoice_account.findOne({status : true});
+
         return res.status(200).json({
             message: "Data fetch successfully.",
             success: true,
-            data : decryptResult,
-            permissions: req.permissions
+            data: result,
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || "Interner server error.",
+            success: false
+        });
+    }
+}
+//  data get
+const getAccount = async (req, res) => {
+    try {
+
+        const result = await invoice_account.find({});
+
+        return res.status(200).json({
+            message: "Data fetch successfully.",
+            success: true,
+            data: result,
         })
     } catch (error) {
         res.status(500).json({
@@ -104,4 +108,4 @@ const getSingleAccount = async(req,res) => {
     }
 }
 
-module.exports = { createAccount, updateAccount, getSingleAccount};
+module.exports = { createAccount, updateAccount, getSingleAccount, getAccount };
