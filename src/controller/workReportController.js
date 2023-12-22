@@ -453,7 +453,9 @@ const dowloandReport = async (req, res) => {
         const htmlContent = ejs.render(htmlstring, ejsData);
 
         // Launch a headless browser using puppeteer
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            ignoreDefaultArgs: ['--disable-extensions'],
+        });
         const page = await browser.newPage();
 
         // Set the content and styles for the PDF
