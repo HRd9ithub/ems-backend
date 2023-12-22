@@ -1,7 +1,7 @@
 const express = require("express")
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
-const { createAccount, updateAccount, getSingleAccount } = require("../controller/invoiceAccountController");
+const { createAccount, updateAccount, getSingleAccount, getAccount } = require("../controller/invoiceAccountController");
 const { invoicePermission } = require("../middlewares/permission");
 const route = express.Router();
 
@@ -9,7 +9,6 @@ const accountValidation = [
     check('bank', "Bank name field is required.").notEmpty(),
     check('name', "Name field is required.").notEmpty(),
     check('branch_name', "Branch name field is required.").notEmpty(),
-    check('invoice_id', "invoice_id field is required.").isMongoId(),
     check("account_number", "Account number is Required.").notEmpty().custom(async (account_number, { req }) => {
         if (account_number && account_number.toString().length < 12) {
             throw new Error('Account number must be at least 12 character.')
@@ -31,6 +30,9 @@ route.put('/:id', Auth,accountValidation, updateAccount);
 
 // account detail get data single
 route.get('/:invoiceId', Auth,invoicePermission, getSingleAccount);
+
+// account detail get data 
+route.get('/', Auth, getAccount);
 
 
 module.exports = route

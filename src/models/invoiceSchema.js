@@ -60,6 +60,9 @@ const invoiceSchema = new Schema({
     attchmentFile: {
         type: Array
     },
+    gstType: {
+        type: String
+    },
     status: {
         type: String,
         default: "Unpaid",
