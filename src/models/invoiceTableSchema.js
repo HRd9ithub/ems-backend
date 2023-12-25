@@ -17,6 +17,18 @@ const invoiceTableSchema = new Schema({
         type: Number,
         required: true,
     },
+    GST: {
+        type: Number,
+    },
+    IGST: {
+        type: Number,
+    },
+    CGST: {
+        type: Number,
+    },
+    SGST: {
+        type: Number,
+    },
     invoiceId : {
         type : String,
         required: true,

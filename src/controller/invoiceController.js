@@ -18,7 +18,7 @@ const createInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue,gstType, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
 
@@ -26,9 +26,13 @@ const createInvoice = async (req, res) => {
         JSON.parse(tableData).forEach(async (element) => {
             await invoice_table.create({
                 itemName: element.itemName,
+                GST :element.GST,
                 rate: element.rate,
                 quantity: element.quantity,
                 amount: element.amount,
+                IGST :element.IGST,
+                SGST :element.SGST,
+                CGST :element.CGST,
                 invoiceId: invoiceId
             });
         });
@@ -60,6 +64,7 @@ const createInvoice = async (req, res) => {
             status,
             contact : contact && contact,
             terms  :terms ? terms : [],
+            gstType
         })
 
         return res.status(201).json({
@@ -89,7 +94,7 @@ const updateInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue,gstType, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
 
@@ -97,9 +102,13 @@ const updateInvoice = async (req, res) => {
         JSON.parse(tableData).forEach(async (element) => {
             await invoice_table.create({
                 itemName: element.itemName,
+                GST :element.GST,
                 rate: element.rate,
                 quantity: element.quantity,
                 amount: element.amount,
+                IGST :element.IGST,
+                SGST :element.SGST,
+                CGST :element.CGST,
                 invoiceId: invoiceId
             });
         });
@@ -136,13 +145,14 @@ const updateInvoice = async (req, res) => {
             currency,
             currencyValue,
             terms  :terms ? terms : [],
-            contact
+            contact,
+            gstType
         })
 
         return res.status(200).json({
             message: "Data updated successfully.",
             success: true,
-            id: response._id
+            id: response._id,
         })
 
     } catch (error) {
@@ -293,6 +303,7 @@ const getInvoice = async (req, res) => {
                     currency : 1,
                     currencyValue : 1,
                     deleteAt : 1,
+                    gstType :1,
                     "invoiceClient.first_name": 1,
                     "invoiceClient.last_name": 1
                 }
