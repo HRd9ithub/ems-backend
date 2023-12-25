@@ -454,7 +454,8 @@ const dowloandReport = async (req, res) => {
 
         // Launch a headless browser using puppeteer
         const browser = await puppeteer.launch({
-            ignoreDefaultArgs: ['--disable-extensions'],
+            args: ['--no-sandbox'],
+            timeout: 10000,
         });
         const page = await browser.newPage();
 
