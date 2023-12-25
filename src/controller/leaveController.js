@@ -6,6 +6,12 @@ const { default: mongoose } = require("mongoose");
 const createActivity = require("../helper/addActivity");
 const role = require("../models/roleSchema");
 const decryptData = require("../helper/decryptData");
+const user = require("../models/userSchema");
+const leaveType = require("../models/leaveTypeSchema");
+const leaveEmail = require("../handler/leaveEmail");
+const path = require("path");
+const fs = require("fs");
+const ejs = require("ejs");
 
 // add leave
 const addLeave = async (req, res) => {
@@ -41,9 +47,64 @@ const addLeave = async (req, res) => {
         })
 
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
+        // get email id for send mail
+        const maillist = await user.aggregate([
+            {
+                $lookup:
+                {
+                    from: "roles",
+                    localField: "role_id",
+                    foreignField: "_id",
+                    as: "role"
+                }
+            },
+            { $unwind: { path: "$role" } },
+            {
+                $match:
+                {
+                    "role.name": { $in: ["ADMIN", "admin", "Admin"] }
+                }
+            },
+            {
+                $project:
+                {
+                    email: 1
+                }
+            }
+        ]);
 
+        // leave_type
+        const leave_type = await leaveType.findOne({ _id: leave_type_id });
+
+        // user name
+        const userName = await user.findOne({ _id: user_id || req.user._id }, { "first_name": 1, "last_name": 1 });
+        const name = userName.first_name.concat(" ", userName.last_name);
+        const convertFromDate = moment(from_date).format("DD MMM YYYY");
+        const convertToDate = moment(to_date).format("DD MMM YYYY");
+
+        let mailsubject = 'Request';
+        // mail content
+        let url = `${process.env.RESET_PASSWORD_URL}/leaves`
+        // get file path
+        const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+
+        // read file using fs module
+        const htmlstring = fs.readFileSync(filepath).toString();
+        // add data dynamic
+        const content = ejs.render(htmlstring, {
+            name,
+            leave_type: leave_type.name,
+            date: duration == 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+            duration: duration == 1 ? duration + " day" : duration + " days",
+            leave_for,
+            action_url: url,
+            isAdmin: true
+        });
+
+        await leaveEmail(res, mailsubject, maillist, content);
         let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status })
-        let response = await leaveRoute.save()
+        let response = await leaveRoute.save();
+
 
         if (req.permissions.name.toLowerCase() !== "admin") {
             createActivity(req.user._id, "Leave added by")
@@ -206,6 +267,61 @@ const updateLeave = async (req, res) => {
 
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
 
+        // get email id for send mail
+        const maillist = await user.aggregate([
+            {
+                $lookup:
+                {
+                    from: "roles",
+                    localField: "role_id",
+                    foreignField: "_id",
+                    as: "role"
+                }
+            },
+            { $unwind: { path: "$role" } },
+            {
+                $match:
+                {
+                    "role.name": { $in: ["ADMIN", "admin", "Admin"] }
+                }
+            },
+            {
+                $project:
+                {
+                    email: 1
+                }
+            }
+        ]);
+
+        // leave_type
+        const leave_type = await leaveType.findOne({ _id: leave_type_id });
+
+        // user name
+        const userName = await user.findOne({ _id: user_id || req.user._id }, { "first_name": 1, "last_name": 1 });
+        const name = userName.first_name.concat(" ", userName.last_name);
+        const convertFromDate = moment(from_date).format("DD MMM YYYY");
+        const convertToDate = moment(to_date).format("DD MMM YYYY");
+
+        let mailsubject = 'Request';
+        // mail content
+        let url = `${process.env.RESET_PASSWORD_URL}/leaves`
+        // get file path
+        const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+
+        // read file using fs module
+        const htmlstring = fs.readFileSync(filepath).toString();
+        // add data dynamic
+        const content = ejs.render(htmlstring, {
+            name,
+            leave_type: leave_type.name,
+            date: duration == 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+            duration: duration == 1 ? duration + " day" : duration + " days",
+            leave_for,
+            action_url: url,
+            isAdmin: true
+        });
+
+        await leaveEmail(res, mailsubject, maillist, content);
 
         const leave_detail = await Leave.findByIdAndUpdate({ _id: id }, {
             user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status
@@ -244,6 +360,27 @@ const changeStatus = async (req, res) => {
         }, { new: true })
 
         if (leave_detail) {
+            // user email
+            const userEmail = await user.findOne({ _id: leave_detail.user_id }, { "email": 1 });
+            const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
+
+            // get file path
+            const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+
+            // read file using fs module
+            const htmlstring = fs.readFileSync(filepath).toString();
+            // add data dynamic
+            const content = ejs.render(htmlstring, {
+                status,
+                action_url: url,
+                isAdmin: false
+            });
+
+            const mailsubject = 'Request';
+            // mail content
+
+            await leaveEmail(res, mailsubject, userEmail.email, content);
+
             return res.status(200).json({ message: "Status Updated successfully.", success: true })
         } else {
             return res.status(404).json({ message: "Leave is not found.", success: false })
