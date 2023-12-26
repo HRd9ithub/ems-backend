@@ -139,38 +139,38 @@
                                     <%= reports[i].name && "-" %>
                                         <%= reports[i].name %>(<%= reports[i].leave_for %>)
                             </td>
-                        <% } else if(reports[i].userId){ %>
-                            <td style="width :15%;">
-                                <%= reports[i].userId && reports[i].date %>
-                            </td>
-                            <td style="width :15%; text-align: center;">
-                                <%= reports[i].userId && reports[i].totalHours %>
-                            </td>
-                            <td>
-                                <% for(let j=0;j<reports[i].work.length;j++) { %>
-                                    <p style="font-weight: bold;" className='mb-0'>
-                                        <%= j + 1 %>.
-                                            <%= reports[i].work[j].project?.name %>
-                                    </p>
-                                    <div className='w-100 text-wrap'>
-                                        <%= reports[i].work[j].description %>
-                                    </div>
-                                <%} %>
-                            </td>
-                        <% } else { %>
-                            <td colspan="3" style="text-align: center; color: orange;">
-                                <%= reports[i].name && reports[i].date %>
-                                    <%= reports[i].name && "-" %>
-                                        <%= reports[i].name %>
-                            </td>
-                        <% } %>
+                            <% } else if(reports[i].userId){ %>
+                                <td style="width :15%;">
+                                    <%= reports[i].userId && reports[i].date %>
+                                </td>
+                                <td style="width :15%; text-align: center;">
+                                    <%= reports[i].userId && reports[i].totalHours %>
+                                </td>
+                                <td>
+                                    <% for(let j=0;j<reports[i].work.length;j++) { %>
+                                        <p style="font-weight: bold;" className='mb-0'>
+                                            <%= j + 1 %>.
+                                                <%= reports[i].work[j].project?.name %>
+                                        </p>
+                                        <div className='w-100 text-wrap'>
+                                            <%- reports[i].work[j].description %>
+                                        </div>
+                                        <%} %>
+                                </td>
+                                <% } else { %>
+                                    <td colspan="3" style="text-align: center; color: orange;">
+                                        <%= reports[i].name && reports[i].date %>
+                                            <%= reports[i].name && "-" %>
+                                                <%= reports[i].name %>
+                                    </td>
+                                    <% } %>
                     </tr>
-                <% } %>
-            <% } else { %>
-                <td colspan="3" style="text-align: center; color: rgb(34 34 34);">
-                    No Records Found
-                </td>
-            <%} %>
+                    <% } %>
+                        <% } else { %>
+                            <td colspan="3" style="text-align: center; color: rgb(34 34 34);">
+                                No Records Found
+                            </td>
+                            <%} %>
         </tbody>
     </table>
 </body>

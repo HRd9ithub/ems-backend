@@ -1,0 +1,100 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
+  <title></title>
+  <link href="https://fonts.googleapis.com/css2?family=Philosopher&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" align="center"
+    style="text-align: left;font-family: 'Philosopher', sans-serif;margin: 1.875rem auto;">
+    <tr>
+      <td width="100%" valign="top" bgcolor="#fff">
+        <table width="550" cellpadding="0" cellspacing="0" align="center"
+          style="padding:1rem 1.2rem; margin:0 auto; border: 1px solid lightgray;">
+          <tr>
+            <td style="text-align: center;">
+              <img src="https://i.postimg.cc/Hxc2kvrJ/d9-logo-black.png" style="height: 4rem;padding: .625rem 0;">
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">
+              <h2 style="margin-top: 0px">Request</h2>
+            </td>
+          </tr>
+          <tr style="width: 100%; text-align:justify;">
+            <table style="width: 100%;">
+              <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                <td style="padding: .625rem;">
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500;text-align:justify;">
+                    <% if(isAdmin) { %>
+                      <strong>
+                        <%= name %> recently requested for <%= leave_type %>. He want <%= duration %>(<%= date %>) <%=
+                                  leave_for %> leave. You may review his request by clicking on review request button.
+                      </strong>
+                      <% } %>
+                        <% if(!isAdmin) { %>
+                          <strong>You are receiving this email because your leave request was <%= status %> by admin. By
+                              clicking on review comment button, you can view comment made by admin on your
+                              request.</strong>
+                          <% } %>
+                  </p>
+                  <p
+                    style="box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol';color:#3869d4;font-size:.79rem;text-align:justify;">
+                    <%= action_url %>
+                  </p>
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500; margin-bottom: 0;">
+                    <% if(isAdmin) { %>
+                      <strong>If you can't able to clicking on button than use above link to review request.</strong>
+                      <% } %>
+                        <% if(!isAdmin) { %>
+                          <strong>If you can't able to clicking on button than use above link to review
+                            comment.</strong>
+                          <% } %>
+                  </p>
+                </td>
+              </tr>
+              <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                <td style="padding: .625rem;">
+                  <p style="text-align: center;margin: 0px">
+                    <% if(isAdmin) { %>
+                      <a href=<%=action_url %> style="box-sizing: border-box;border-radius: .25rem;color: #fff;display:
+                        inline-block;overflow: hidden;text-decoration: none;background-color: #084c89;border-bottom:
+                        .5rem solid #084c89;border-left: 1.125rem solid #084c89;border-right: 1.125rem solid
+                        #084c89;border-top: .5rem solid #084c89;">Review Request</a>
+                      <% } %>
+                        <% if(!isAdmin) { %>
+                          <a href=<%=action_url %> style="box-sizing: border-box;border-radius: .25rem;color: #fff;display: inline-block;overflow: hidden;text-decoration: none;background-color: #084c89;border-bottom: .5rem solid #084c89;border-left: 1.125rem solid #084c89;border-right: 1.125rem solid #084c89;border-top: .5rem solid #084c89;">Review Comment</a>
+                        <% } %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="border-top:1px solid #e5e5e5"></td>
+              </tr>
+              <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                <td style="padding: .625rem 0 0;">
+                  <% if(isAdmin) { %>
+                    <p style="text-align: center;color: #000000;font-size: .9375rem;font-weight: 500; margin: 0px">You have received this mandatory email service to review your employee request.</p>
+                  <% } %>
+                  <% if(!isAdmin) { %>
+                    <p style="text-align: center;color: #000000;font-size: .9375rem;font-weight: 500; margin: 0px">You have received this mandatory email service to review your request status.</p>
+                  <% } %>
+                </td>
+              </tr>
+            </table>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

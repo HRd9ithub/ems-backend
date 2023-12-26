@@ -12,7 +12,7 @@ const upload = multer({
     storage: imgConfig,
     fileFilter: (req, file, cb) => {
         var ext = path.extname(file.originalname)
-        if (ext === '.png' || ext === '.jpg' || ext === '.svg' || ext === '.jpeg' ) {
+        if (ext.toLowerCase() === '.png' || ext.toLowerCase() === '.jpg' || ext.toLowerCase() === '.svg' || ext.toLowerCase() === '.jpeg' ) {
             cb(null, true);
         } else {
             return cb(new Error('The image type is not allowed. Allowed types: SVG, jpeg, jpg, png'))
