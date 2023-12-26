@@ -12,27 +12,21 @@ const moment = require("moment");
 const sendOtpMail = require("../handler/otpEmail");
 const createActivity = require("../helper/addActivity");
 const account = require("../models/accountSchema");
-const emergencyRoute = require("../routes/emergencyRoute");
 const emergency_contact = require("../models/emergencySchema");
 const decryptData = require("../helper/decryptData");
-const encryptData = require("../helper/encrptData");
 
 const addTime = async (res, id, login) => {
     try {
-        let data_detail = await timeSheet.findOne({ user_id: id, date: moment(new Date()).format("YYYY-MM-DD") });
+        const data_detail = await timeSheet.findOne({ user_id: id, date: moment(new Date()).format("YYYY-MM-DD") });
 
         if (!data_detail) {
-            let Hours = new Date().getHours();
-            let Minutes = new Date().getMinutes();
-            let second = new Date().getSeconds();
-            let date = moment(new Date()).format("YYYY-MM-DD")
-            let login_time = Hours + ":" + Minutes + ":" + second;
+            const date = moment(new Date()).format("YYYY-MM-DD")
 
             // add data database
             const timeData = new timeSheet({
                 user_id: id,
                 date,
-                login_time: login_time,
+                login_time: moment().format("HH:mm:ss"),
                 login_id: login
             });
 
@@ -125,7 +119,6 @@ const verifyOtp = async (req, res) => {
             let diff = data.expireIn - currTime
 
             if (diff < 0) {
-                // await user.findByIdAndUpdate({ _id: data._id }, { $unset: { otp: 1, expireIn: 1 } }, { new: true })
                 return res.status(400).json({ message: "OTP has expired.", success: false })
             }
 
@@ -346,15 +339,12 @@ const checkLink = async (req, res) => {
 const userLogout = async (req, res) => {
     try {
         if (req.user) {
-            let data = await timeSheet.findOne({ user_id: req.user._id, date: moment(new Date()).format("YYYY-MM-DD") });
-            let roleData = await role.findOne({_id: req.user.role_id});
+            const data = await timeSheet.findOne({ user_id: req.user._id, date: moment(new Date()).format("YYYY-MM-DD") });
+            const roleData = await role.findOne({_id: req.user.role_id});
             // get menu data in database
             if (data && roleData?.name.toLowerCase() !== "admin") {
-                let Hours = new Date().getHours();
-                let Minutes = new Date().getMinutes();
-                let second = new Date().getSeconds();
-                let logout_time = Hours + ":" + Minutes + ":" + second;
-                var total = moment.utc(moment(logout_time, "HH:mm:ss").diff(moment(data.login_time, "HH:mm:ss"))).format("HH:mm")
+                const logout_time = moment().format("HH:mm:ss");
+                const total = moment.utc(moment(logout_time, "HH:mm:ss").diff(moment(data.login_time, "HH:mm:ss"))).format("HH:mm")
 
                 const response = await timeSheet.findByIdAndUpdate({ _id: data._id }, { logout_time, total }, { new: true })
                 createActivity(req.user._id,"Log out by");

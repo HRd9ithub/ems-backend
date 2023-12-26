@@ -3,7 +3,12 @@ const invoice = require("../models/invoiceSchema");
 const invoice_table = require("../models/invoiceTableSchema");
 const expressValidator = require("express-validator");
 const decryptData = require("../helper/decryptData");
-
+const path = require("path");
+const fs = require('fs');
+const ejs = require('ejs');
+const { default: puppeteer } = require("puppeteer");
+const moment = require("moment");
+const invoice_account = require("../models/invoiceAccountSchema");
 
 // create invoice
 const createInvoice = async (req, res) => {
@@ -18,7 +23,7 @@ const createInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue,gstType, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field, terms, contact, clientId, userId, currencyValue, gstType, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
 
@@ -26,13 +31,13 @@ const createInvoice = async (req, res) => {
         JSON.parse(tableData).forEach(async (element) => {
             await invoice_table.create({
                 itemName: element.itemName,
-                GST :element.GST,
+                GST: element.GST,
                 rate: element.rate,
                 quantity: element.quantity,
                 amount: element.amount,
-                IGST :element.IGST,
-                SGST :element.SGST,
-                CGST :element.CGST,
+                IGST: element.IGST,
+                SGST: element.SGST,
+                CGST: element.CGST,
                 invoiceId: invoiceId
             });
         });
@@ -62,8 +67,8 @@ const createInvoice = async (req, res) => {
             currencyValue,
             attchmentFile: fileUrl,
             status,
-            contact : contact && contact,
-            terms  :terms ? terms : [],
+            contact: contact && contact,
+            terms: terms ? terms : [],
             gstType
         })
 
@@ -94,7 +99,7 @@ const updateInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field,terms,contact, clientId, userId,currencyValue,gstType, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field, terms, contact, clientId, userId, currencyValue, gstType, totalAmount, signImage, note, currency, attchmentFile, status, tableData } = req.body;
 
         await invoice_table.deleteMany({ invoiceId });
 
@@ -102,13 +107,13 @@ const updateInvoice = async (req, res) => {
         JSON.parse(tableData).forEach(async (element) => {
             await invoice_table.create({
                 itemName: element.itemName,
-                GST :element.GST,
+                GST: element.GST,
                 rate: element.rate,
                 quantity: element.quantity,
                 amount: element.amount,
-                IGST :element.IGST,
-                SGST :element.SGST,
-                CGST :element.CGST,
+                IGST: element.IGST,
+                SGST: element.SGST,
+                CGST: element.CGST,
                 invoiceId: invoiceId
             });
         });
@@ -144,7 +149,7 @@ const updateInvoice = async (req, res) => {
             status,
             currency,
             currencyValue,
-            terms  :terms ? terms : [],
+            terms: terms ? terms : [],
             contact,
             gstType
         })
@@ -163,85 +168,94 @@ const updateInvoice = async (req, res) => {
     }
 }
 
+// get single data common
+
+const getSingleData = async (id) => {
+    const result = await invoice.aggregate([
+        {
+            $match: { _id: new mongoose.Types.ObjectId(id) }
+        },
+        {
+            $lookup: {
+                from: "invoice_clients", localField: "clientId", foreignField: "_id", as: "invoiceClient"
+            }
+        },
+        {
+            $lookup: {
+                from: "users", localField: "userId", foreignField: "_id", as: "invoiceProvider"
+            }
+        },
+        {
+            $lookup: {
+                from: "invoice_accounts", localField: "_id", foreignField: "invoice_id", as: "bankDetails"
+            }
+        },
+        {
+            $lookup: {
+                from: "invoice_tables", localField: "invoiceId", foreignField: "invoiceId", as: "productDetails"
+            }
+        },
+        {
+            $project: {
+                "invoiceProvider.password": 0,
+                "invoiceProvider.token": 0,
+            }
+        }
+    ])
+
+    const decryptResult = result.map((val) => {
+        return {
+            ...val,
+            invoiceClient: val.invoiceClient.map((elem) => {
+                return {
+                    ...elem,
+                    "first_name": decryptData(elem.first_name),
+                    "last_name": decryptData(elem.last_name),
+                    "phone": decryptData(elem.phone),
+                    "country": decryptData(elem.country),
+                    "state": decryptData(elem.state),
+                    "city": decryptData(elem.city),
+                    "postcode": decryptData(elem.postcode),
+                    "address": decryptData(elem.address),
+                }
+            }),
+            bankDetails: val.bankDetails.map((elem) => {
+                return {
+                    ...elem,
+                    "bank": decryptData(elem.bank),
+                    "account_number": decryptData(elem.account_number),
+                    "ifsc_code": decryptData(elem.ifsc_code),
+                    "branch_name": decryptData(elem.branch_name),
+                    "name": decryptData(elem.name),
+                }
+            }),
+            invoiceProvider: val.invoiceProvider.map((elem) => {
+                return {
+                    ...elem,
+                    "first_name": decryptData(elem.first_name),
+                    "last_name": decryptData(elem.last_name),
+                    "phone": decryptData(elem.phone),
+                    "gender": decryptData(elem.gender),
+                    "country": decryptData(elem.country),
+                }
+            })
+        }
+    })
+
+    return decryptResult
+}
+
 // single data get
 const getSingleInvoice = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const result = await invoice.aggregate([
-            {
-                $match: { _id: new mongoose.Types.ObjectId(id) }
-            },
-            {
-                $lookup: {
-                    from: "invoice_clients", localField: "clientId", foreignField: "_id", as: "invoiceClient"
-                }
-            },
-            {
-                $lookup: {
-                    from: "users", localField: "userId", foreignField: "_id", as: "invoiceProvider"
-                }
-            },
-            {
-                $lookup: {
-                    from: "invoice_accounts", localField: "_id", foreignField: "invoice_id", as: "bankDetails"
-                }
-            },
-            {
-                $lookup: {
-                    from: "invoice_tables", localField: "invoiceId", foreignField: "invoiceId", as: "productDetails"
-                }
-            },
-            {
-                $project: {
-                    "invoiceProvider.password": 0,
-                    "invoiceProvider.token": 0,
-                }
-            }
-        ])
+        const result = await getSingleData(id);
 
-        const decryptResult = result.map((val) => {
-            return {
-                ...val,
-                invoiceClient: val.invoiceClient.map((elem) => {
-                    return {
-                        ...elem,
-                        "first_name": decryptData(elem.first_name),
-                        "last_name": decryptData(elem.last_name),
-                        "phone": decryptData(elem.phone),
-                        "country": decryptData(elem.country),
-                        "state": decryptData(elem.state),
-                        "city": decryptData(elem.city),
-                        "postcode": decryptData(elem.postcode),
-                        "address": decryptData(elem.address),
-                    }
-                }),
-                bankDetails: val.bankDetails.map((elem) => {
-                    return {
-                        ...elem,
-                        "bank": decryptData(elem.bank),
-                        "account_number": decryptData(elem.account_number),
-                        "ifsc_code": decryptData(elem.ifsc_code),
-                        "branch_name": decryptData(elem.branch_name),
-                        "name": decryptData(elem.name),
-                    }
-                }),
-                invoiceProvider: val.invoiceProvider.map((elem) => {
-                    return {
-                        ...elem,
-                        "first_name": decryptData(elem.first_name),
-                        "last_name": decryptData(elem.last_name),
-                        "phone": decryptData(elem.phone),
-                        "gender": decryptData(elem.gender),
-                        "country": decryptData(elem.country),
-                    }
-                })
-            }
-        })
         return res.status(200).json({
             message: "success",
             success: true,
-            data: decryptResult,
+            data: result,
             permissions: req.permissions
         })
     } catch (error) {
@@ -256,7 +270,7 @@ const getSingleInvoice = async (req, res) => {
 //  data get
 const getInvoice = async (req, res) => {
     try {
-        const { startDate, endDate, id,} = req.query;
+        const { startDate, endDate, id, } = req.query;
 
         const result = await invoice.aggregate([
             {
@@ -266,7 +280,7 @@ const getInvoice = async (req, res) => {
                         { "issue_date": { $gte: new Date(startDate) } },
                         { "issue_date": { $lte: new Date(endDate) } },
                     ],
-                    userId : new mongoose.Types.ObjectId(req.user._id)
+                    userId: new mongoose.Types.ObjectId(req.user._id)
                     // "status": JSON.parse(status).length === 0  ? { $nin:JSON.parse(status) } : { $in: JSON.parse(status) }
                 }
             },
@@ -300,10 +314,10 @@ const getInvoice = async (req, res) => {
                     createdAt: 1,
                     updatedAt: 1,
                     productDetails: 1,
-                    currency : 1,
-                    currencyValue : 1,
-                    deleteAt : 1,
-                    gstType :1,
+                    currency: 1,
+                    currencyValue: 1,
+                    deleteAt: 1,
+                    gstType: 1,
                     "invoiceClient.first_name": 1,
                     "invoiceClient.last_name": 1
                 }
@@ -335,14 +349,16 @@ const getInvoice = async (req, res) => {
 const statusInvoice = async (req, res) => {
     try {
         const { id } = req.params;
-           
-        const result = await invoice.findByIdAndUpdate({ _id: id }, { $set: { 
-            status: req.body.status,
-            payment_date : req.body.date,
-            payment_method : req.body.payment_method,
-            payment_note : req.body.payment_note
-         } });
-        
+
+        const result = await invoice.findByIdAndUpdate({ _id: id }, {
+            $set: {
+                status: req.body.status,
+                payment_date: req.body.date,
+                payment_method: req.body.payment_method,
+                payment_note: req.body.payment_note
+            }
+        });
+
 
         if (!result) {
             return res.status(404).json({
@@ -369,9 +385,9 @@ const deleteInvoice = async (req, res) => {
         const { id } = req.params;
         const { p } = req.query;
         let result;
-        if(p === "true"){
+        if (p === "true") {
             result = await invoice.findOneAndDelete({ _id: id });
-        }else{
+        } else {
             result = await invoice.findByIdAndUpdate({ _id: id }, { $set: { deleteAt: new Date() } });
         }
 
@@ -399,9 +415,9 @@ const deleteInvoice = async (req, res) => {
 const restoreInvoice = async (req, res) => {
     try {
         const { id } = req.params;
-       
+
         const result = await invoice.findByIdAndUpdate({ _id: id }, { $unset: { deleteAt: "" } });
-        
+
         if (!result) {
             return res.status(404).json({
                 message: "Record not found.",
@@ -422,4 +438,75 @@ const restoreInvoice = async (req, res) => {
     }
 }
 
-module.exports = { createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice,restoreInvoice,statusInvoice }
+// download invoice
+const downloadInvoice = async (req, res) => {
+    try {
+        const { id } = req.query;
+
+        const result = await getSingleData(id);
+        const bankDetail = await invoice_account.findOne({status : true});
+
+
+        if (!result || result.length === 0) {
+            return res.status(404).json({ message: 'Record not found', success: false })
+        }
+        
+        const ejsData = {
+            result : result[0],
+            provider : result[0].invoiceProvider[0],
+            invoiceClient : result[0].invoiceClient[0],
+            productDetails : result[0].productDetails,
+            bankDetail,
+            issue_date : moment(result[0].issue_date).format("DD MMM YYYY"),
+            due_date : result[0].due_date && moment(result[0].due_date).format("DD MMM YYYY"),
+        }
+        // get file path
+        const filepath = path.resolve(__dirname, "../../views/invoice.ejs");
+
+        // read file using fs module
+        const htmlstring = fs.readFileSync(filepath).toString();
+        // add data dynamic
+        const htmlContent = ejs.render(htmlstring, ejsData);
+
+        // Launch a headless browser using puppeteer
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox'],
+            timeout: 10000,
+        });
+        const page = await browser.newPage();
+
+        // Set the content and styles for the PDF
+        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
+
+        // Generate the PDF
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            displayHeaderFooter: false, // Set to false to remove the duplicate head
+            margin: {
+                top: '20px',
+                bottom: '20px',
+                left: '20px',
+                right: '20px',
+            },
+            printBackground: true,
+        });
+
+        // Close the browser
+        await browser.close();
+
+        // Send the generated PDF as a downloadable file
+        const pdfFileName = '../../public/invoice.pdf';
+        const pdfPath = path.join(__dirname, pdfFileName);
+        // Save the PDF to a file
+        fs.writeFileSync(pdfPath, pdfBuffer);
+        res.download(pdfPath)
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || "Interner server error",
+            success: false,
+            statusCode: 500
+        })
+    }
+}
+
+module.exports = { createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice, restoreInvoice, statusInvoice, downloadInvoice }

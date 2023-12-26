@@ -1,7 +1,7 @@
 const {Router} = require("express");
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
-const { createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice, restoreInvoice, statusInvoice } = require("../controller/invoiceController");
+const { createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice, restoreInvoice, statusInvoice, downloadInvoice } = require("../controller/invoiceController");
 const invoice = require("../models/invoiceSchema");
 const { invoicePermission } = require("../middlewares/permission");
 const { importDocument, attchmentFile } = require("../middlewares/documentUpload");
@@ -37,6 +37,9 @@ route.patch("/status/:id",Auth,invoicePermission,[
     check("payment_method","Payment method is required").notEmpty(),
     check("payment_date","Date is required").notEmpty(),
 ],statusInvoice);
+
+// download invoice route
+route.get("/invoice-download",downloadInvoice);
 
 // restore route
 route.patch("/:id",Auth,invoicePermission,restoreInvoice);
