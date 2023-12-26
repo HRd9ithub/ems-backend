@@ -92,13 +92,13 @@ const menuData = [{
 
 const defaultUser = async () => {
     try {
-        // const roleData = new role({
-        //     name: "Admin",
-        //     permissions: []
-        // });
+        const roleData = new role({
+            name: "Admin",
+            permissions: []
+        });
 
-        // const response = await roleData.save();
-        // if (response) {
+        const response = await roleData.save();
+        if (response) {
             const defaultUser = {
                 employee_id: "D9-001",
                 first_name: encryptData("Admin"),
@@ -116,8 +116,8 @@ const defaultUser = async () => {
             if (userData) {
                 console.log("Successfully created.")
             }
-            // await menu.insertMany(menuData)
-        // }
+            await menu.insertMany(menuData)
+        }
     } catch (error) {
         console.log('error', error)
     }
