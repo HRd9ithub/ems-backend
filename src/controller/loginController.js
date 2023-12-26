@@ -15,18 +15,31 @@ const account = require("../models/accountSchema");
 const emergency_contact = require("../models/emergencySchema");
 const decryptData = require("../helper/decryptData");
 
+// Format the date in the Asia/Kolkata timezone
+const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour12: false, // If you want 24-hour format
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric'
+});
+
 const addTime = async (res, id, login) => {
     try {
         const data_detail = await timeSheet.findOne({ user_id: id, date: moment(new Date()).format("YYYY-MM-DD") });
 
         if (!data_detail) {
-            const date = moment(new Date()).format("YYYY-MM-DD")
+            // Create a Date object
+            const now = new Date();
+            const date = moment(now).format("YYYY-MM-DD")
+            // Get the formatted time
+            const timeInKolkata = formatter.format(now);
 
             // add data database
             const timeData = new timeSheet({
                 user_id: id,
                 date,
-                login_time: moment().format("HH:mm:ss"),
+                login_time: timeInKolkata,
                 login_id: login
             });
 
@@ -70,7 +83,7 @@ const userLogin = async (req, res) => {
                     if (result === "send") {
                         // update data for otp
                         const response = await user.findByIdAndUpdate({ _id: userData._id }, { otp, expireIn: new Date().getTime() + 5 * 60000, $unset: { token: 1 } }, { new: true })
-                        return res.status(200).json({ success: true, message: "OTP sent successfully.",data: response.email })
+                        return res.status(200).json({ success: true, message: "OTP sent successfully.", data: response.email })
                     }
 
                 } else {
@@ -140,13 +153,13 @@ const verifyOtp = async (req, res) => {
                 createActivity(data._id, 'Login by')
             }
 
-            let accountCount = await account.find({user_id : data._id}).count();
-            let emergency_contactcount = await emergency_contact.find({user_id : data._id}).count();
+            let accountCount = await account.find({ user_id: data._id }).count();
+            let emergency_contactcount = await emergency_contact.find({ user_id: data._id }).count();
 
             if (role_detail.name.toLowerCase() === "admin" || (login && time) || !req.body.isDesktop) {
                 // otp match for update otp value null
                 const response = await user.findByIdAndUpdate({ _id: data._id }, { $unset: { otp: 1, expireIn: 1 } }, { new: true })
-                return res.status(200).json({ success: true, message: "Logged in successfully.", token: token, id: response._id , userVerify : (accountCount=== 0 || emergency_contactcount === 0) && role_detail.name.toLowerCase() !== "admin"  })
+                return res.status(200).json({ success: true, message: "Logged in successfully.", token: token, id: response._id, userVerify: (accountCount === 0 || emergency_contactcount === 0) && role_detail.name.toLowerCase() !== "admin" })
             }
         } else {
             // not match send message
@@ -222,7 +235,7 @@ const mailSend = async (req, res) => {
             let url = `${process.env.RESET_PASSWORD_URL}/reset-password?email=${req.body.email}&token=${token}`
 
             // mail send function
-            let result = await forgetEmail(res,req.body.email, mailsubject, url);
+            let result = await forgetEmail(res, req.body.email, mailsubject, url);
             if (result === "send") {
 
                 await tokenSchema.deleteMany({ email: req.body.email })
@@ -340,14 +353,17 @@ const userLogout = async (req, res) => {
     try {
         if (req.user) {
             const data = await timeSheet.findOne({ user_id: req.user._id, date: moment(new Date()).format("YYYY-MM-DD") });
-            const roleData = await role.findOne({_id: req.user.role_id});
+            const roleData = await role.findOne({ _id: req.user.role_id });
             // get menu data in database
             if (data && roleData?.name.toLowerCase() !== "admin") {
-                const logout_time = moment().format("HH:mm:ss");
+                // Create a Date object
+                const now = new Date();
+                // Get the formatted time
+                const logout_time = formatter.format(now);
                 const total = moment.utc(moment(logout_time, "HH:mm:ss").diff(moment(data.login_time, "HH:mm:ss"))).format("HH:mm")
 
                 const response = await timeSheet.findByIdAndUpdate({ _id: data._id }, { logout_time, total }, { new: true })
-                createActivity(req.user._id,"Log out by");
+                createActivity(req.user._id, "Log out by");
             }
             await user.findByIdAndUpdate({ _id: req.user._id }, { $unset: { token: 1 } }, { new: true })
             return res.status(200).json({ success: true, message: "You have successfully logged out." })
