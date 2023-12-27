@@ -9,7 +9,6 @@ const menuRoute = require('./routes/menuRoute');
 const holidayRoute = require('./routes/holidayRoute');
 const leaveTypeRoute = require('./routes/leaveTypeRoute');
 const accountRoute = require('./routes/accountRoute');
-const timeSheetRoute = require('./routes/timesheetRoute');
 const documentRoute = require('./routes/documentRoute');
 const roleRoute = require('./routes/roleRoute');
 const emergencyRoute = require('./routes/emergencyRoute');
@@ -67,7 +66,6 @@ app.use('/api/menu', menuRoute)
 app.use('/api/holiday', holidayRoute)
 app.use('/api/leaveType', leaveTypeRoute)
 app.use('/api/leave', leaveRouter)
-app.use('/api/timeSheet', timeSheetRoute)
 app.use('/api/document', documentRoute)
 app.use('/api/role', roleRoute)
 app.use('/api/account', accountRoute)

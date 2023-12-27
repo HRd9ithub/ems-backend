@@ -4,7 +4,6 @@ const user = require("../models/userSchema");
 var jwt = require('jsonwebtoken');
 const otpGenerator = require('otp-generator');
 const loginInfo = require("../models/loginInfoSchema");
-const timeSheet = require("../models/timeSheetSchema");
 const forgetEmail = require("../handler/forgetEmail");
 const tokenSchema = require("../models/tokenSchema");
 const role = require("../models/roleSchema");
@@ -14,43 +13,6 @@ const createActivity = require("../helper/addActivity");
 const account = require("../models/accountSchema");
 const emergency_contact = require("../models/emergencySchema");
 const decryptData = require("../helper/decryptData");
-
-// Format the date in the Asia/Kolkata timezone
-const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Kolkata',
-    hour12: false, // If you want 24-hour format
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric'
-});
-
-const addTime = async (res, id, login) => {
-    try {
-        const data_detail = await timeSheet.findOne({ user_id: id, date: moment(new Date()).format("YYYY-MM-DD") });
-
-        if (!data_detail) {
-            // Create a Date object
-            const now = new Date();
-            const date = moment(now).format("YYYY-MM-DD")
-            // Get the formatted time
-            const timeInKolkata = formatter.format(now);
-
-            // add data database
-            const timeData = new timeSheet({
-                user_id: id,
-                date,
-                login_time: timeInKolkata,
-                login_id: login
-            });
-
-            await timeData.save();
-        }
-        return true
-    } catch (error) {
-        res.status(500).json({ message: error.message || 'Internal server Error', success: false })
-        return
-    }
-}
 
 // user login function
 const userLogin = async (req, res) => {
@@ -111,7 +73,6 @@ const userLogin = async (req, res) => {
 const verifyOtp = async (req, res) => {
     try {
         let login = "";
-        let time = "";
 
         const errors = expressValidator.validationResult(req);
 
@@ -147,16 +108,13 @@ const verifyOtp = async (req, res) => {
                     browser_name: req.body.browser_name
                 });
                 login = await loginData.save();
-                if (req.body.isDesktop) {
-                    time = await addTime(res, data._id, login._id)
-                }
                 createActivity(data._id, 'Login by')
             }
 
             let accountCount = await account.find({ user_id: data._id }).count();
             let emergency_contactcount = await emergency_contact.find({ user_id: data._id }).count();
 
-            if (role_detail.name.toLowerCase() === "admin" || (login && time) || !req.body.isDesktop) {
+            if (role_detail.name.toLowerCase() === "admin" || login ) {
                 // otp match for update otp value null
                 const response = await user.findByIdAndUpdate({ _id: data._id }, { $unset: { otp: 1, expireIn: 1 } }, { new: true })
                 return res.status(200).json({ success: true, message: "Logged in successfully.", token: token, id: response._id, userVerify: (accountCount === 0 || emergency_contactcount === 0) && role_detail.name.toLowerCase() !== "admin" })
@@ -352,17 +310,9 @@ const checkLink = async (req, res) => {
 const userLogout = async (req, res) => {
     try {
         if (req.user) {
-            const data = await timeSheet.findOne({ user_id: req.user._id, date: moment(new Date()).format("YYYY-MM-DD") });
             const roleData = await role.findOne({ _id: req.user.role_id });
             // get menu data in database
-            if (data && roleData?.name.toLowerCase() !== "admin") {
-                // Create a Date object
-                const now = new Date();
-                // Get the formatted time
-                const logout_time = formatter.format(now);
-                const total = moment.utc(moment(logout_time, "HH:mm:ss").diff(moment(data.login_time, "HH:mm:ss"))).format("HH:mm")
-
-                const response = await timeSheet.findByIdAndUpdate({ _id: data._id }, { logout_time, total }, { new: true })
+            if (roleData?.name.toLowerCase() !== "admin") {
                 createActivity(req.user._id, "Log out by");
             }
             await user.findByIdAndUpdate({ _id: req.user._id }, { $unset: { token: 1 } }, { new: true })

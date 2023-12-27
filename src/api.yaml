@@ -1515,47 +1515,6 @@ paths:
           '500':
             description: Server error.
 
-
-# -------------------------------------------  Timesheet  api ---------------------------------------------------#
-
-# get
-  paths:
-  /api/timeSheet/:
-      get:
-        tags:
-          -  Timesheet
-        security:
-        - token: []
-        summary: list time sheet.   
-        parameters:
-        - in: query
-          name: id
-          schema:
-            type: string
-          description: the user id or empty
-        - in: query
-          name: startDate
-          required : true
-          description: This date format is YYYY-MM-DD.
-          schema:
-            type: string
-        - in: query
-          name: endDate
-          required : true
-          description: This date format is YYYY-MM-DD.
-          schema:
-            type: string
-          
-        responses:
-          '200':
-            description: Success message. 
-          '401':
-            description:  Unauthorized.
-          '403':
-            description: Access Denied.
-          '500':
-            description: Server error.
-
 # -------------------------------------------  leave  api ---------------------------------------------------#
 
 # add leave

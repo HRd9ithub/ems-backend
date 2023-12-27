@@ -3,7 +3,6 @@ const { Router } = require('express');
 const Auth = require('../middlewares/authtication');
 const user = require('../models/userSchema');
 const Leave = require('../models/leaveSchema');
-const timeSheet = require('../models/timeSheetSchema');
 const holiday = require('../models/holidaySchema');
 const { default: mongoose } = require('mongoose');
 const decryptData = require('../helper/decryptData');

@@ -167,21 +167,6 @@ const holidayPermission = async (req, res, next) => {
     }
 }
 
-// * ================== timesheet route check permission ==========================
-const timesheetPermission = async (req, res, next) => {
-    try {
-        let permission = await getRoleData(req.user.role_id, "timesheet");
-
-        req.permissions = permission;
-
-        if (req.method === "GET") {
-            permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing timesheet to the Timesheet Data. please contact admin." })
-        }
-    } catch (error) {
-        return res.status(500).json({ message: error.message })
-    }
-}
-
 // * ================== activity route check permission ===========================
 const activityPermission = async (req, res, next) => {
 
@@ -354,4 +339,4 @@ const clientPermission = async (req, res, next) => {
     }
 }
 
-module.exports = { userPermission, passwordPermission, rolePermission,clientPermission, invoicePermission, projectPermission, activityPermission, attendancePermission, reportPermission, designationtPermission, documentPermission, leavePermission, leaveTypePermission, holidayPermission, timesheetPermission }
+module.exports = { userPermission, passwordPermission, rolePermission,clientPermission, invoicePermission, projectPermission, activityPermission, attendancePermission, reportPermission, designationtPermission, documentPermission, leavePermission, leaveTypePermission, holidayPermission }

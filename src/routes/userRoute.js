@@ -1,7 +1,6 @@
 const express = require("express")
 var bodyParser = require('body-parser');
 const expressValidator = require("express-validator");
-const upload = require("../middlewares/ImageProfile");
 const { createUser, activeUser, getUser, updateUser, deleteUser, updateStatusUser, checkEmail, checkEmployeeId, changeImage, changePassword, getLoginInfo, getUserName } = require("../controller/userController");
 const Auth = require("../middlewares/authtication");
 const user = require("../models/userSchema");
