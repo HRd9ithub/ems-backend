@@ -7,7 +7,6 @@ const role = require("../models/roleSchema");
 const userDocumentRoute = express.Router();
 
 userDocumentRoute.post('/', Auth, function (req, res) {
-    
     uploadSingleImage(req, res, async function (err) {
         if (err) {
             return res.status(400).send({ message: err.message })

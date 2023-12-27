@@ -44,11 +44,6 @@ const menuData = [{
     "icon": "fa-solid fa-calendar"
 },
 {
-    "name": "Timesheet",
-    "path": "/time-sheet",
-    "icon": "fa-solid fa-clock"
-},
-{
     "name": "Attendance",
     "path": "/attendance",
     "icon": "fa-solid fa-user-check"
@@ -97,27 +92,27 @@ const defaultUser = async () => {
             permissions: []
         });
 
-        const response = await roleData.save();
-        if (response) {
-            const defaultUser = {
-                employee_id: "D9-001",
-                first_name: encryptData("Admin"),
-                last_name: encryptData("Admin"),
-                email: "hardik.d9ithub+1@gmail.com",
-                phone: encryptData("7894561230"),
-                joining_date: "2023-10-01",
-                status: "Active",
-                gender: encryptData("Male"),
-                password: "Employee@123",
-                role_id: "6583be26152ce726ff3f1b91",
-            }
+        // const response = await roleData.save();
+        // if (response) {
+            // const defaultUser = {
+            //     employee_id: "D9-001",
+            //     first_name: encryptData("Admin"),
+            //     last_name: encryptData("Admin"),
+            //     email: "hardik.d9ithub+1@gmail.com",
+            //     phone: encryptData("7894561230"),
+            //     joining_date: "2023-10-01",
+            //     status: "Active",
+            //     gender: encryptData("Male"),
+            //     password: "Employee@123",
+            //     role_id: "6583be26152ce726ff3f1b91",
+            // }
 
-            const userData = await user.create(defaultUser)
-            if (userData) {
-                console.log("Successfully created.")
-            }
+            // const userData = await user.create(defaultUser)
+            // if (userData) {
+            //     console.log("Successfully created.")
+            // }
             await menu.insertMany(menuData)
-        }
+        // }
     } catch (error) {
         console.log('error', error)
     }
