@@ -8,21 +8,21 @@ const route = Router();
 
 // validation part
 const clockInvalidation = [
-    check("clock_in", "clock in time is required.").notEmpty()
+    check("clock_in", "clock in time is a required field.").notEmpty()
 ]
 const clockOutvalidation = [
-    check("clock_out", "clock out time is required.").notEmpty(),
+    check("clock_out", "clock out time is a required field.").notEmpty(),
 ]
 const regulationValidation = [
-    check("clockIn", "Clock in time is required field.").notEmpty(),
-    check("clockOut", "Clock out time is required field.").notEmpty(),
-    check("explanation", "Explanation is required field.").notEmpty(),
-    check("timestamp", "Timestamp is required field.").notEmpty(),
-    check("userId", "User id is required field.").isMongoId(),
+    check("clockIn", "Clock in time is a required field.").notEmpty(),
+    check("clockOut", "Clock out time is a required field.").notEmpty(),
+    check("explanation", "Explanation is a required field.").notEmpty(),
+    check("timestamp", "Timestamp is a required field.").notEmpty(),
+    check("userId", "User id is a required field.").isMongoId(),
 ]
 const commentValidation = [
-    check("comment", "Comment is required field.").notEmpty(),
-    check("attendanceRegulationId", "attendanceRegulation id is required field.").isMongoId(),
+    check("comment", "Comment is a required field.").notEmpty(),
+    check("attendanceRegulationId", "attendanceRegulation id is a required field.").isMongoId(),
     check('status', "Invalid status.Please enter the status value for Reject or Approved.").isIn(["Reject", "Approved"]),
 ]
 

@@ -237,6 +237,10 @@ const getSingleData = async (id) => {
                     "phone": decryptData(elem.phone),
                     "gender": decryptData(elem.gender),
                     "country": decryptData(elem.country),
+                    "state": decryptData(elem.state),
+                    "city": decryptData(elem.city),
+                    "postcode": decryptData(elem.postcode),
+                    "address": decryptData(elem.address),
                 }
             })
         }
