@@ -7,6 +7,7 @@ const user = require("../models/userSchema");
 const regulationMail = require("../handler/regulationEmail");
 const Attendance_Regulation = require("../models/attendanceRegulationSchema");
 const Attendance_Comment = require("../models/attendanceCommentSchema");
+const getAdminEmail = require("../helper/getAdminEmail");
 
 // add clockIn time
 const clockIn = async (req, res) => {
@@ -223,30 +224,7 @@ const sendRegulationMail = async (req, res) => {
             return res.status(422).json({ success: false, error: ["The request already exists."] })
         }
         // get email id for send mail
-        const maillist = await user.aggregate([
-            {
-                $lookup:
-                {
-                    from: "roles",
-                    localField: "role_id",
-                    foreignField: "_id",
-                    as: "role"
-                }
-            },
-            { $unwind: { path: "$role" } },
-            {
-                $match:
-                {
-                    "role.name": { $in: ["ADMIN", "admin", "Admin"] }
-                }
-            },
-            {
-                $project:
-                {
-                    email: 1
-                }
-            }
-        ]);
+        const maillist = await getAdminEmail();
 
         const convertDate = moment(timestamp).format("DD MMM YYYY");
 

@@ -12,6 +12,7 @@ const leaveEmail = require("../handler/leaveEmail");
 const path = require("path");
 const fs = require("fs");
 const ejs = require("ejs");
+const getAdminEmail = require("../helper/getAdminEmail");
 
 // add leave
 const addLeave = async (req, res) => {
@@ -48,30 +49,7 @@ const addLeave = async (req, res) => {
 
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
         // get email id for send mail
-        const maillist = await user.aggregate([
-            {
-                $lookup:
-                {
-                    from: "roles",
-                    localField: "role_id",
-                    foreignField: "_id",
-                    as: "role"
-                }
-            },
-            { $unwind: { path: "$role" } },
-            {
-                $match:
-                {
-                    "role.name": { $in: ["ADMIN", "admin", "Admin"] }
-                }
-            },
-            {
-                $project:
-                {
-                    email: 1
-                }
-            }
-        ]);
+        const maillist = await getAdminEmail();
 
         // leave_type
         const leave_type = await leaveType.findOne({ _id: leave_type_id });
@@ -268,30 +246,7 @@ const updateLeave = async (req, res) => {
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
 
         // get email id for send mail
-        const maillist = await user.aggregate([
-            {
-                $lookup:
-                {
-                    from: "roles",
-                    localField: "role_id",
-                    foreignField: "_id",
-                    as: "role"
-                }
-            },
-            { $unwind: { path: "$role" } },
-            {
-                $match:
-                {
-                    "role.name": { $in: ["ADMIN", "admin", "Admin"] }
-                }
-            },
-            {
-                $project:
-                {
-                    email: 1
-                }
-            }
-        ]);
+        const maillist = await getAdminEmail();
 
         // leave_type
         const leave_type = await leaveType.findOne({ _id: leave_type_id });

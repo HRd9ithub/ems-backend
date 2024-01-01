@@ -6,6 +6,9 @@ const ReportRequestSchema = require('../models/reportRequestSchema');
 const report = require('../models/workReportSchema');
 const createActivity = require('../helper/addActivity');
 const role = require('../models/roleSchema');
+const getAdminEmail = require("../helper/getAdminEmail");
+const workReportMail = require('../handler/workReportEmail');
+const moment = require('moment');
 
 // * check data 
 const validation = [
@@ -42,6 +45,17 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
             date: req.body.date
         })
         await reportRequestData.save();
+
+        const emaiList = await getAdminEmail();
+
+        const contentData = {
+            timestamp : moment(req.body.date).format("DD MMM YYYY"),
+            name : req.user?.first_name.concat(" ", req.user.last_name),
+            explanation : req.body.description,
+            title: req.body.title
+        }
+
+        await workReportMail(res,emaiList,contentData)
 
         if (roleData.name.toLowerCase() !== "admin") {
             if (req.body.title === "Add Request") {
