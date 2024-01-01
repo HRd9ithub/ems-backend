@@ -109,8 +109,7 @@ const getAttendance = async (req, res) => {
                 {
                     _id: {
                         date: "$timestamp",
-                        userId: "$userId",
-                        _id: "$_id",
+                        userId: "$userId"
                     },
                     "child": { "$push": "$$ROOT" },
                 }
@@ -131,7 +130,7 @@ const getAttendance = async (req, res) => {
             {
                 $lookup: {
                     from: "attendance_regulations",
-                    localField: "_id._id",
+                    localField: "child._id",
                     foreignField: "attendanceId",
                     pipeline: [
                         {
