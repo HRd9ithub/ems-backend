@@ -108,7 +108,8 @@ const getAttendance = async (req, res) => {
                 {
                     _id: {
                         date: "$timestamp",
-                        userId: "$userId"
+                        userId: "$userId",
+                        _id: "$_id",
                     },
                     "child": { "$push": "$$ROOT" },
                 }
@@ -127,7 +128,28 @@ const getAttendance = async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: "attendance_regulations",
+                    localField: "_id._id",
+                    foreignField: "attendanceId",
+                    pipeline: [
+                        {
+                            $match: {
+                                "isDelete": { $exists: false },
+                            }
+                        }
+                    ], as: "attendance_regulations_data"
+                }
+            },
+            {
+                $unwind: {
+                    "path": "$attendance_regulations_data",
+                    "preserveNullAndEmptyArrays": true
+                }
+            },
+            {
                 $match: {
+                    // "attendance_regulations_data.isDelete": { $exists: false },
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -136,12 +158,13 @@ const getAttendance = async (req, res) => {
                     ]
                 }
             },
-            { $sort : { "_id.date" : -1 } },
+            { $sort: { "_id.date": -1 } },
             {
                 $project: {
                     child: 1,
                     "user.first_name": 1,
                     "user.last_name": 1,
+                    attendance_regulations_data: 1
                 }
             }
         ])
@@ -194,8 +217,8 @@ const sendRegulationMail = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Employee not found' })
         }
         const name = userData.first_name.concat(" ", userData.last_name);
-        
-        const Attendance_Regulation_data = await Attendance_Regulation.findOne({ attendanceId: id, isDelete : {$exists : false} })
+
+        const Attendance_Regulation_data = await Attendance_Regulation.findOne({ attendanceId: id, isDelete: { $exists: false } })
         if (Attendance_Regulation_data) {
             return res.status(422).json({ success: false, error: ["The request already exists."] })
         }
@@ -227,7 +250,11 @@ const sendRegulationMail = async (req, res) => {
 
         const convertDate = moment(timestamp).format("DD MMM YYYY");
 
-        await regulationMail(res, maillist, clockIn, clockOut, explanation, convertDate, name);
+        const contentData = {
+            clock_in_time : clockIn, clock_out_time : clockOut, explanation, timestamp :convertDate , name,isAdmin :true
+        }
+
+        await regulationMail(res, maillist, contentData);
 
         await Attendance_Regulation.create({
             userId,
@@ -253,7 +280,7 @@ const getAttendanceRegulation = async (req, res) => {
             {
                 $match: {
                     attendanceId: new mongoose.Types.ObjectId(id),
-                    isDelete : {$exists : false}
+                    isDelete: { $exists: false }
                 }
             },
             {
@@ -309,7 +336,7 @@ const getAttendanceRegulation = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ data: result, success: true,permissions: req.permissions })
+        return res.status(200).json({ data: result, success: true, permissions: req.permissions })
 
     } catch (error) {
         return res.status(500).json({ message: error.message || "Interner server error.", success: false })
@@ -319,7 +346,7 @@ const getAttendanceRegulation = async (req, res) => {
 // ADD COMMENT 
 const addComment = async (req, res) => {
     try {
-        const { comment, status, attendanceRegulationId, clock_in,clock_out } = req.body;
+        const { comment, status, attendanceRegulationId, clock_in, clock_out } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -336,11 +363,16 @@ const addComment = async (req, res) => {
 
         await Attendance_Comment.create({
             comment, status, attendanceRegulationId
-        })
+        });
 
-        const response = await attendance.findByIdAndUpdate({_id : attendanceRegulationId},{$set : {clock_in,clock_out,totalHours : req.body.totalHours}})
+        const contentData = {
+            isAdmin :false,status: status,comment,action_url : `${process.env.RESET_PASSWORD_URL}/attendance`
+        }
+        const response = await attendance.findByIdAndUpdate({ _id: attendanceRegulationId }, { $set: { clock_in, clock_out, totalHours: req.body.totalHours } })
+        const userData = await user.findOne({_id : response.userId},{email : 1})
+        await regulationMail(res,userData.email, contentData);
 
-        await Attendance_Regulation.updateMany({attendanceId: attendanceRegulationId},{$set : {isDelete : true}})
+        await Attendance_Regulation.updateMany({ attendanceId: attendanceRegulationId }, { $set: { isDelete: true } })
 
         return res.status(200).json({ message: "Data added successfully.", success: true })
     } catch (error) {

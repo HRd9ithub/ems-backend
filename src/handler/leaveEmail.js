@@ -1,8 +1,5 @@
 
 const nodemailer = require('nodemailer');
-const path = require('path');
-const ejs = require('ejs');
-const fs = require('fs');
 const { SMTP_EMAIL, SMTP_PASSWORD } = process.env
 
 const leaveEmail = async (res, mailsubject, email, content) => {

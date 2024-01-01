@@ -13,65 +13,112 @@
 </head>
 
 <body>
-  <table width="100%" cellpadding="0" cellspacing="0" align="center" style="text-align: left;font-family: 'Philosopher', sans-serif;margin: 1.875rem auto;">
+  <table width="100%" cellpadding="0" cellspacing="0" align="center"
+    style="text-align: left;font-family: 'Philosopher', sans-serif;margin: 1.875rem auto;">
     <tr>
       <td width="100%" valign="top" bgcolor="#fff">
-        <table width="550" cellpadding="0" cellspacing="0" align="center" style="padding:1rem 1.2rem; margin:0 auto; border: 1px solid lightgray;">
-            <tr>
-                <td style="text-align: center;">
-                  <img src="https://i.postimg.cc/Hxc2kvrJ/d9-logo-black.png" style="height: 4rem;padding: .625rem 0;">
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align: center;">
-                  <h2 style="margin-top: 0px">Attendance Adjustment</h2>
-                </td>
-            </tr>
-            <tr style="width: 100%; text-align:justify;">
-                <table style="width: 100%;">
-                    <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
-                      <td style="padding: .625rem;">
-                          <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
-                            <strong style="color: #084c89;">Dear Sir/Ma'am,</strong>
-                          </p>
-                          <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
-                            <strong style="color: #084c89;"><%= name %></strong> has recently requested to attendance adjustment for <strong style="color: #084c89;"><%= timestamp %></strong>. He/She may requested to change his/her older details to below details.
-                          </p>
-                          <% if(clock_in_time) { %>
-                            <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
-                              Clock In Time: <strong style="color: #084c89;"><%= clock_in_time %></strong> 
-                            </p>
-                          <% } %>
-                          <% if(clock_out_time) { %>
-                            <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
-                              Clock Out Time: <strong style="color: #084c89;"><%= clock_out_time %></strong>
-                            </p>
-                          <% } %>
+        <table width="550" cellpadding="0" cellspacing="0" align="center"
+          style="padding:1rem 1.2rem; margin:0 auto; border: 1px solid lightgray;">
+          <tr>
+            <td style="text-align: center;">
+              <img src="https://i.postimg.cc/Hxc2kvrJ/d9-logo-black.png" style="height: 4rem;padding: .625rem 0;">
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">
+              <h2 style="margin-top: 0px">Attendance Adjustment</h2>
+            </td>
+          </tr>
+          <tr style="width: 100%; text-align:justify;">
+            <table style="width: 100%;">
+              <% if(isAdmin) { %>
+                <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                  <td style="padding: .625rem;">
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
+                      <strong style="color: #084c89;">Dear Sir/Ma'am,</strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
+                      <strong style="color: #084c89;">
+                        <%= name %>
+                      </strong> has recently requested to attendance adjustment for <strong style="color: #084c89;">
+                        <%= timestamp %>
+                      </strong>. He/She may requested to change his/her older details to below details.
+                    </p>
+                    <% if(clock_in_time) { %>
+                      <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                        Clock In Time: <strong style="color: #084c89;">
+                          <%= clock_in_time %>
+                        </strong>
+                      </p>
+                      <% } %>
+                        <% if(clock_out_time) { %>
                           <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
-                            <%= explanation %>
+                            Clock Out Time: <strong style="color: #084c89;">
+                              <%= clock_out_time %>
+                            </strong>
                           </p>
-                          <p style="color: #000000;font-size: .9375rem;text-align:justify;">
+                          <% } %>
+                            <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                              <%= explanation %>
+                            </p>
+                            <p style="color: #000000;font-size: .9375rem;text-align:justify;">
                             <div>
                               <strong style="color: #084c89;">Thanks & Regards</strong>
                             </div>
                             <span>D9ithub Software Solutions Pvt Ltd.</span>
-                          </p>
-                      </td>
-                    </tr>
+                            </p>
+                  </td>
+                </tr>
+              <% } else { %>
+                <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                  <td style="padding: .625rem;">
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 500;text-align:justify;">
+                      <strong>
+                        You are receiving this email because your attendance adjustment was <%= status %> by
+                          admin. By clicking on the review button, you can view data made by the admin on your request.
+                      </strong>
+                    </p>
+                    <% if(comment) { %>
+                      <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                        <%= comment %>
+                      </p>
+                    <% } %>
+                    <p style="box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol';color:#3869d4;font-size:.79rem;text-align:justify;">
+                      <%= action_url %>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 500; margin-bottom: 0;">
+                        <strong>If you can't able to click on the button then use the above link to review.</strong>
+                    </p>
+                  </td>
+                </tr>
+                <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                  <td style="padding: .625rem;">
+                    <p style="text-align: center;margin: 0px">
+                      <a href=<%=action_url %> style="box-sizing: border-box;border-radius: .25rem;color: #fff;display: inline-block;overflow: hidden;text-decoration: none;background-color: #084c89;border-bottom: .5rem solid #084c89;border-left: 1.125rem solid #084c89;border-right: 1.125rem solid #084c89;border-top: .5rem solid #084c89;">Review</a>
+                    </p>
+                  </td>
+                </tr>
+              <% } %>
                     <tr>
                       <td style="border-top:1px solid #e5e5e5"></td>
                     </tr>
                     <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
                       <td style="padding: .625rem 0 0;">
-                          <p style="text-align: center;color: #000000;font-size: .9375rem;font-weight: 500; margin: 0px">You have received this mandatory email service to review your attendance adjustment.</p>
+                        <p style="text-align: center;color: #000000;font-size: .9375rem;font-weight: 500; margin: 0px">
+                          <% if(isAdmin) { %> 
+                            You have received this mandatory email service to review your attendance adjustment.  
+                          <% } else { %>
+                            You have received this mandatory email service to review your request status.
+                          <% } %>  
+                        </p>
                       </td>
                     </tr>
-                </table>
-            </tr>
+            </table>
+          </tr>
         </table>
       </td>
     </tr>
-</table>
+  </table>
 </body>
 
 </html>
