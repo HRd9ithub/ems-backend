@@ -21,7 +21,7 @@ const regulationValidation = [
     check("userId", "User id is a required field.").isMongoId(),
 ]
 const commentValidation = [
-    check("comment", "Comment is a required field.").notEmpty(),
+    // check("comment", "Comment is a required field.").notEmpty(),
     check("attendanceRegulationId", "attendanceRegulation id is a required field.").isMongoId(),
     check('status', "Invalid status.Please enter the status value for Reject or Approved.").isIn(["Reject", "Approved"]),
 ]

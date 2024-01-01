@@ -2,8 +2,7 @@ const mongoose = require("mongoose");
 
 const attendanceCommentSchema = new mongoose.Schema({
     comment: {
-        type: String,
-        required: true
+        type: String
     },
     attendanceRegulationId: {
         type: mongoose.Types.ObjectId,
