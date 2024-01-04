@@ -28,6 +28,7 @@ const invoiceRoute = require("./routes/invoiceRoute");
 const invoiceClientRoute = require('./routes/invoiceClientRoute');
 const invoiceAccountRoute = require('./routes/invoiceAccountRoute');
 
+const sendBirthdayMail = require('./cron-job');
 // add database
 const connectDB = require("./DB/connection");
 
@@ -102,3 +103,5 @@ connectDB().then(() => {
 }).catch((error) => {
    console.log(error.message);
 })
+
+sendBirthdayMail();

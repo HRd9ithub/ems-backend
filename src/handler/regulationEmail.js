@@ -34,7 +34,7 @@ const regulationMail = async (res,maillist,contentData) => {
                 const mailOptions = {
                     from: from,
                     to: element.email,
-                    subject: "Change Request",
+                    subject: "Attendance Adjustment",
                     html: content
                 };
                 await transporter.sendMail(mailOptions);
@@ -43,7 +43,7 @@ const regulationMail = async (res,maillist,contentData) => {
             const mailOptions = {
                 from: from,
                 to: maillist,
-                subject: "Request",
+                subject: "Attendance Adjustment",
                 html: content
             };
             await transporter.sendMail(mailOptions);

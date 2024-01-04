@@ -34,6 +34,10 @@ const leaveSchema = new mongoose.Schema({
       type: String,
       require: true,
       enum: ['Pending', 'Approved', "Declined", "Read"]
+   },
+   isNotification: {
+      type: Boolean,
+      default : true,
    }
 }, {
    timestamps: true,

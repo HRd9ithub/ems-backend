@@ -60,11 +60,11 @@ const addLeave = async (req, res) => {
         const convertFromDate = moment(from_date).format("DD MMM YYYY");
         const convertToDate = moment(to_date).format("DD MMM YYYY");
 
-        let mailsubject = 'Request';
+        let mailsubject = 'Leave Request';
         // mail content
         let url = `${process.env.RESET_PASSWORD_URL}/leaves`
         // get file path
-        const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+        const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
         // read file using fs module
         const htmlstring = fs.readFileSync(filepath).toString();
@@ -76,11 +76,12 @@ const addLeave = async (req, res) => {
             duration: duration == 1 ? duration + " day" : duration + " days",
             leave_for,
             action_url: url,
-            isAdmin: true
+            isAdmin: true,
+            reason
         });
 
         await leaveEmail(res, mailsubject, maillist, content);
-        let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status })
+        let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status,isNotification : user_id ? false :true })
         let response = await leaveRoute.save();
 
 
@@ -257,11 +258,11 @@ const updateLeave = async (req, res) => {
         const convertFromDate = moment(from_date).format("DD MMM YYYY");
         const convertToDate = moment(to_date).format("DD MMM YYYY");
 
-        let mailsubject = 'Request';
+        let mailsubject = 'Leave Request';
         // mail content
         let url = `${process.env.RESET_PASSWORD_URL}/leaves`
         // get file path
-        const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+        const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
         // read file using fs module
         const htmlstring = fs.readFileSync(filepath).toString();
@@ -273,7 +274,8 @@ const updateLeave = async (req, res) => {
             duration: duration == 1 ? duration + " day" : duration + " days",
             leave_for,
             action_url: url,
-            isAdmin: true
+            isAdmin: true,
+            reason
         });
 
         await leaveEmail(res, mailsubject, maillist, content);
@@ -315,26 +317,28 @@ const changeStatus = async (req, res) => {
         }, { new: true })
 
         if (leave_detail) {
-            // user email
-            const userEmail = await user.findOne({ _id: leave_detail.user_id }, { "email": 1 });
-            const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
+            // if (leave_detail.status !== "Read") {
+                // user email
+                const userEmail = await user.findOne({ _id: leave_detail.user_id }, { "email": 1 });
+                const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
 
-            // get file path
-            const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+                // get file path
+                const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
-            // read file using fs module
-            const htmlstring = fs.readFileSync(filepath).toString();
-            // add data dynamic
-            const content = ejs.render(htmlstring, {
-                status,
-                action_url: url,
-                isAdmin: false
-            });
+                // read file using fs module
+                const htmlstring = fs.readFileSync(filepath).toString();
+                // add data dynamic
+                const content = ejs.render(htmlstring, {
+                    status,
+                    action_url: url,
+                    isAdmin: false
+                });
 
-            const mailsubject = 'Request';
-            // mail content
+                const mailsubject = 'Leave Request Status';
+                // mail content
 
-            await leaveEmail(res, mailsubject, userEmail.email, content);
+                await leaveEmail(res, mailsubject, userEmail.email, content);
+            // }
 
             return res.status(200).json({ message: "Status Updated successfully.", success: true })
         } else {
@@ -347,17 +351,19 @@ const changeStatus = async (req, res) => {
 }
 
 // change status view all
-const allChangeStatus = async (req, res) => {
+const notificationDelete = async (req, res) => {
     try {
-        let { key } = req.query;
-        const leave_detail = await Leave.updateMany({ status: "Pending" }, {
-            status: "Read"
-        }, { new: true });
-        if (key) {
-            let result = await ReportRequestSchema.deleteMany({})
+        const { id, report } = req.query;
+
+        if (report) {
+            const result = await ReportRequestSchema.findByIdAndDelete({_id : id})
+        }else{
+            const leave_detail = await Leave.findByIdAndUpdate({_id : id}, { $set : {
+                isNotification: false
+            }}, { new: true });
         }
 
-        return res.status(200).json({ message: "Status Updated successfully.", success: true })
+        return res.status(200).json({ message: "Notification deleted successfully.", success: true })
 
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
@@ -367,7 +373,7 @@ const allChangeStatus = async (req, res) => {
 const getNotifications = async (req, res) => {
     try {
         let leaveData = await Leave.aggregate([
-            { $match: { status: "Pending" } },
+            { $match: { isNotification: true } },
             {
                 $lookup:
                 {
@@ -445,6 +451,7 @@ const getNotifications = async (req, res) => {
                     title: 1,
                     description: 1,
                     date: 1,
+                    status: 1,
                     "user.employee_id": 1,
                     "user.profile_image": 1,
                     "user.first_name": 1,
@@ -497,4 +504,4 @@ const deleteLeave = async (req, res) => {
     }
 }
 
-module.exports = { addLeave, getLeave, singleGetLeave, updateLeave, deleteLeave, changeStatus, allChangeStatus, getNotifications }
+module.exports = { addLeave, getLeave, singleGetLeave, updateLeave, deleteLeave, changeStatus, notificationDelete, getNotifications }

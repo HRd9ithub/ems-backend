@@ -26,7 +26,11 @@
           </tr>
           <tr>
             <td style="text-align: center;">
-              <h2 style="margin-top: 0px">Request</h2>
+              <% if(!isAdmin) { %>
+                <h2 style="margin-top: 0px">Leave Request Status</h2>
+              <% } else if(isAdmin) { %>
+                <h2 style="margin-top: 0px">Leave Request</h2>
+              <% } %>
             </td>
           </tr>
           <tr style="width: 100%; text-align:justify;">
@@ -36,8 +40,7 @@
                   <p style="color: #000000;font-size: .9375rem;font-weight: 500;text-align:justify;">
                     <% if(isAdmin) { %>
                       <strong>
-                        <%= name %> recently requested for <%= leave_type %>. He want <%= duration %>(<%= date %>) <%=
-                                  leave_for %> leave. You may review his request by clicking on review request button.
+                        <%= name %> recently requested for <%= leave_type %>. They are requesting a leave of <%= duration %> from <%= date %>. This request is due to <%= reason %>. Let me know if you need more information about this.
                       </strong>
                       <% } %>
                         <% if(!isAdmin) { %>

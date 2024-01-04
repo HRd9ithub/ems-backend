@@ -445,7 +445,7 @@ const dowloandReport = async (req, res) => {
             name: data.name
         }
         // get file path
-        const filepath = path.resolve(__dirname, "../../views/reportTable.ejs");
+        const filepath = path.resolve(__dirname, "../../views/workReport.ejs");
 
         // read file using fs module
         const htmlstring = fs.readFileSync(filepath).toString();
@@ -479,7 +479,7 @@ const dowloandReport = async (req, res) => {
         await browser.close();
 
         // Send the generated PDF as a downloadable file
-        const pdfFileName = 'report.pdf';
+        const pdfFileName = '../../public/work-report.pdf';
         const pdfPath = path.join(__dirname, pdfFileName);
         // Save the PDF to a file
         fs.writeFileSync(pdfPath, pdfBuffer);
