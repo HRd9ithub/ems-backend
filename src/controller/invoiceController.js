@@ -465,7 +465,7 @@ const downloadInvoice = async (req, res) => {
             due_date : result[0].due_date && moment(result[0].due_date).format("DD MMM YYYY"),
         }
         // get file path
-        const filepath = path.resolve(__dirname, "../../views/invoice.ejs");
+        const filepath = path.resolve(__dirname, "../../views/invoiceTemplate.ejs");
 
         // read file using fs module
         const htmlstring = fs.readFileSync(filepath).toString();
