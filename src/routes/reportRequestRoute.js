@@ -86,5 +86,20 @@ ReportRequestRoute.delete('/:id', async (req, res) => {
     }
 
 })
+// status change reportRequestRoutes
+ReportRequestRoute.put('/:id', async (req, res) => {
+    try {
+        const reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({_id : req.params.id},{$set : {status : "Read"}});
+        if (reportRequestRoute) {
+            return res.status(200).json({ success: true, message: "Status changed successfully." })
+        } else {
+            return res.status(404).json({ success: false, message: "Record is not found." })
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+    }
+
+})
 
 module.exports = ReportRequestRoute
