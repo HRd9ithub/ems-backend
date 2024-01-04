@@ -16,7 +16,7 @@ const forgetEmail = async (res,email, mailsubject, url) => {
         })
 
         // get file path
-        let filepath = path.resolve(__dirname, "../../views/forgotPassword.ejs");
+        let filepath = path.resolve(__dirname, "../../views/forgotPasswordTemplate.ejs");
 
         // read file using fs module
         let htmlstring = fs.readFileSync(filepath).toString();

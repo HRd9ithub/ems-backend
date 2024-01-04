@@ -60,11 +60,11 @@ const addLeave = async (req, res) => {
         const convertFromDate = moment(from_date).format("DD MMM YYYY");
         const convertToDate = moment(to_date).format("DD MMM YYYY");
 
-        let mailsubject = 'Request';
+        let mailsubject = 'Leave Request';
         // mail content
         let url = `${process.env.RESET_PASSWORD_URL}/leaves`
         // get file path
-        const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+        const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
         // read file using fs module
         const htmlstring = fs.readFileSync(filepath).toString();
@@ -76,11 +76,12 @@ const addLeave = async (req, res) => {
             duration: duration == 1 ? duration + " day" : duration + " days",
             leave_for,
             action_url: url,
-            isAdmin: true
+            isAdmin: true,
+            reason
         });
 
         await leaveEmail(res, mailsubject, maillist, content);
-        let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status })
+        let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status,isNotification : user_id ? false :true })
         let response = await leaveRoute.save();
 
 
@@ -257,11 +258,11 @@ const updateLeave = async (req, res) => {
         const convertFromDate = moment(from_date).format("DD MMM YYYY");
         const convertToDate = moment(to_date).format("DD MMM YYYY");
 
-        let mailsubject = 'Request';
+        let mailsubject = 'Leave Request';
         // mail content
         let url = `${process.env.RESET_PASSWORD_URL}/leaves`
         // get file path
-        const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+        const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
         // read file using fs module
         const htmlstring = fs.readFileSync(filepath).toString();
@@ -273,7 +274,8 @@ const updateLeave = async (req, res) => {
             duration: duration == 1 ? duration + " day" : duration + " days",
             leave_for,
             action_url: url,
-            isAdmin: true
+            isAdmin: true,
+            reason
         });
 
         await leaveEmail(res, mailsubject, maillist, content);
@@ -321,7 +323,7 @@ const changeStatus = async (req, res) => {
                 const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
 
                 // get file path
-                const filepath = path.resolve(__dirname, "../../views/requestEmail.ejs");
+                const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
                 // read file using fs module
                 const htmlstring = fs.readFileSync(filepath).toString();
@@ -332,7 +334,7 @@ const changeStatus = async (req, res) => {
                     isAdmin: false
                 });
 
-                const mailsubject = 'Request';
+                const mailsubject = 'Leave Request Status';
                 // mail content
 
                 await leaveEmail(res, mailsubject, userEmail.email, content);

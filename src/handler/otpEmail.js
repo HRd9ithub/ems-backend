@@ -17,7 +17,7 @@ const sendOtpMail = async (res, email, mailsubject, otp) => {
         });
 
         // get file path
-        let filepath = path.resolve(__dirname, "../../views/otp.ejs");
+        let filepath = path.resolve(__dirname, "../../views/otpTemplate.ejs");
 
         // read file using fs module
         let htmlstring = fs.readFileSync(filepath).toString();
