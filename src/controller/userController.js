@@ -223,15 +223,6 @@ const getUser = async (req, res) => {
                 }
             },
             { $unwind: { path: "$report", preserveNullAndEmptyArrays: true } },
-            // {
-            //     $match: {
-            //         "report.delete_at": { $exists: false },
-            //         $or: [
-            //             { "report.leaveing_date": { $eq: null } },
-            //             { "report.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
-            //         ]
-            //     }
-            // },
             {
                 $project: {
                     "employee_id": 1,
@@ -240,12 +231,6 @@ const getUser = async (req, res) => {
                     "email": 1,
                     "phone": 1,
                     "status": 1,
-                    "role.name": 1,
-                    "designation.name": 1,
-                    "report.first_name": 1,
-                    "report.last_name": 1,
-                    "report.status": 1,
-                    "report._id": 1,
                 }
             }
         ]);
@@ -257,16 +242,7 @@ const getUser = async (req, res) => {
                 employee_id: item.employee_id,
                 email: item.email,
                 phone: decryptData(item.phone),
-                status: item.status,
-                report: {
-                    _id: item.report._id,
-                    name :decryptData(item.report.first_name).concat(" ", decryptData(item.report.last_name)),
-                    last_name: decryptData(item.report.last_name),
-                    status: item.report.status,
-                },
-                role:{
-                    name: item.role.name
-                }
+                status: item.status
             }
         })
         return res.status(200).json({ success: true, message: "User data fetch successfully.", data: result, permissions: req.permissions })
@@ -466,9 +442,15 @@ const changePassword = async (req, res) => {
 
         // password compare
         const isMatch = await bcrypt.compare(req.body.current_password, userData.password);
-
+        
         if (!isMatch) {
             return res.status(400).json({ error: ["Incorrect current password."], success: false })
+        }
+
+        // new password match for surrent password 
+        const oldMatch = await bcrypt.compare(req.body.new_password, userData.password);
+        if (oldMatch) {
+            return res.status(400).json({ error: ["New password must be different from the current password."], success: false })
         }
         const roleData = await role.findOne({ _id: userData.role_id });
         if (roleData.name.toLowerCase() !== "admin") {
