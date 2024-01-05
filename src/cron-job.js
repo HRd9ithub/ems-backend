@@ -14,7 +14,7 @@ const sendBirthdayMail = async () => {
     const timeZone = 'Asia/Kolkata';
 
     try {
-        const birthCronJob = cron.schedule("54 10 * * *", async () => {
+        const birthCronJob = cron.schedule("11 11 * * *", async () => {
                 const userData = await user.find({ date_of_birth: { $exists: true } }, { first_name: 1, last_name: 1, date_of_birth: 1, _id: 0 });
                 const birthList = userData.filter((val) => {
                     return moment(val.date_of_birth).format("DD-MM") === moment(new Date()).format("DD-MM")
