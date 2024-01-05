@@ -9,15 +9,15 @@ const ejs = require('ejs');
 
 const sendBirthdayMail = async () => {
     const { SMTP_EMAIL, SMTP_PASSWORD } = process.env
-    
+
     try {
-        cron.schedule("0 0 * * *", async () => {
-            const userData = await user.find({}, { first_name: 1, last_name: 1, date_of_birth: 1, _id: 0 });
+        cron.schedule("30 10 * * *", async () => {
+            const userData = await user.find({ date_of_birth: { $exists: true } }, { first_name: 1, last_name: 1, date_of_birth: 1, _id: 0 });
             const birthList = userData.filter((val) => {
                 return moment(val.date_of_birth).format("DD-MM") === moment(new Date()).format("DD-MM")
             })
 
-            if(birthList.length !== 0){
+            if (birthList.length !== 0) {
                 const adminMailArray = await getAdminEmail();
     
                 const adminMail = adminMailArray.map((val) => val.email);
@@ -54,15 +54,18 @@ const sendBirthdayMail = async () => {
         
                 transporter.sendMail(mailOptions,(error,info) => {
                     if (error) {
-                        console.error('Error sending birthday notification email:', error);
-                      } else {
+                        console.log('Error sending birthday notification email:', error);
+                    } else {
                         console.log('Birthday notification email sent:', info.response);
-                      }
+                    }
                 })
             }
-        })
+        }, {
+            scheduled: true,
+            timezone: "Asia/Kolkata"
+        });
     } catch (error) {
-        console.log(error);
+        console.log(error, "catch-error");
     }
 }
 
