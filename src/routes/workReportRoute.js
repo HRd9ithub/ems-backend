@@ -13,8 +13,8 @@ let workReportValidation = [
     check('work.*.projectId', "Project is a required field.").notEmpty(),
     check('work.*.description', "Description is a required field.").notEmpty(),
     check('work.*.hours', "Working hours is a required field.").notEmpty().custom(async (totalHours, { req }) => {
-        if (totalHours && (totalHours.toString() > 24 || totalHours.toString() < 1)) {
-            throw new Error('Working hours range from 1 to 24 hours.')
+        if (totalHours && (totalHours.toString() > 24 || totalHours.toString() < 0)) {
+            throw new Error('Working hours range from 0 to 24 hours.')
         }
     })
 ]
