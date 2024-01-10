@@ -74,6 +74,11 @@ const menuData = [{
     "icon": "fa-solid fa-gear"
 },
 {
+    "name": "Leave Setting",
+    "path": "/leave-setting",
+    "icon": "fa-solid fa-gear"
+},
+{
     "name": "Invoices",
     "path": "/invoice",
     "icon": "fa-solid fa-dollar-sign"

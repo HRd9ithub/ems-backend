@@ -13,6 +13,8 @@ const path = require("path");
 const fs = require("fs");
 const ejs = require("ejs");
 const getAdminEmail = require("../helper/getAdminEmail");
+const leaveCalcution = require("../helper/leaveCalcution");
+const leave_setting = require("../models/leaveSettingSchema");
 
 // add leave
 const addLeave = async (req, res) => {
@@ -81,7 +83,7 @@ const addLeave = async (req, res) => {
         });
 
         await leaveEmail(res, mailsubject, maillist, content);
-        let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status,isNotification : user_id ? false :true })
+        let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status, isNotification: user_id ? false : true })
         let response = await leaveRoute.save();
 
 
@@ -189,7 +191,30 @@ const getLeave = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ message: "Leave data fetch successfully.", success: true, data: result, permissions: req.permissions })
+        const leaveSettingData = await leave_setting.aggregate([
+            {
+                $lookup: {
+                    from: "leavetypes", localField: "leaveTypeId", foreignField: "_id", as: "leaveType"
+                }
+            },
+            { $unwind: { path: "$leavetype", preserveNullAndEmptyArrays: true } },
+            {
+                $project : {
+                    "leaveTypeId": 1,
+                    "totalLeave": 1,
+                    "createdAt": 1,
+                    "updatedAt": 1,
+                    "leavetype":  { $first: "$leaveType.name" }
+                }
+            }
+        ])
+
+        let calData = Promise.all(leaveSettingData.map(async (val) => {
+            let cal = await leaveCalcution(id || req.user._id, val.leaveTypeId);
+            return { cal, type: val.leavetype,totalLeave : val.totalLeave }
+        }))
+
+        return res.status(200).json({ message: "Leave data fetch successfully.", success: true, leaveSettings: await calData, data: result, permissions: req.permissions })
     } catch (error) {
         return res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
@@ -318,26 +343,26 @@ const changeStatus = async (req, res) => {
 
         if (leave_detail) {
             // if (leave_detail.status !== "Read") {
-                // user email
-                const userEmail = await user.findOne({ _id: leave_detail.user_id }, { "email": 1 });
-                const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
+            // user email
+            const userEmail = await user.findOne({ _id: leave_detail.user_id }, { "email": 1 });
+            const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
 
-                // get file path
-                const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
+            // get file path
+            const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
-                // read file using fs module
-                const htmlstring = fs.readFileSync(filepath).toString();
-                // add data dynamic
-                const content = ejs.render(htmlstring, {
-                    status,
-                    action_url: url,
-                    isAdmin: false
-                });
+            // read file using fs module
+            const htmlstring = fs.readFileSync(filepath).toString();
+            // add data dynamic
+            const content = ejs.render(htmlstring, {
+                status,
+                action_url: url,
+                isAdmin: false
+            });
 
-                const mailsubject = 'Leave Request Status';
-                // mail content
+            const mailsubject = 'Leave Request Status';
+            // mail content
 
-                await leaveEmail(res, mailsubject, userEmail.email, content);
+            await leaveEmail(res, mailsubject, userEmail.email, content);
             // }
 
             return res.status(200).json({ message: "Status Updated successfully.", success: true })
@@ -356,11 +381,13 @@ const notificationDelete = async (req, res) => {
         const { id, report } = req.query;
 
         if (report) {
-            const result = await ReportRequestSchema.findByIdAndDelete({_id : id})
-        }else{
-            const leave_detail = await Leave.findByIdAndUpdate({_id : id}, { $set : {
-                isNotification: false
-            }}, { new: true });
+            const result = await ReportRequestSchema.findByIdAndDelete({ _id: id })
+        } else {
+            const leave_detail = await Leave.findByIdAndUpdate({ _id: id }, {
+                $set: {
+                    isNotification: false
+                }
+            }, { new: true });
         }
 
         return res.status(200).json({ message: "Notification deleted successfully.", success: true })
