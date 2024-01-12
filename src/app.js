@@ -27,6 +27,7 @@ const userRoute = require("./routes/userRoute");
 const invoiceRoute = require("./routes/invoiceRoute");
 const invoiceClientRoute = require('./routes/invoiceClientRoute');
 const invoiceAccountRoute = require('./routes/invoiceAccountRoute');
+const leaveSettingRoute = require('./routes/leaveSettingRoute');
 
 const sendBirthdayMail = require('./cron-job');
 // add database
@@ -82,6 +83,7 @@ app.use('/api/attendance', attendanceRoute)
 app.use('/api/invoice/client', invoiceClientRoute)
 app.use('/api/invoice/account', invoiceAccountRoute)
 app.use('/api/invoice', invoiceRoute)
+app.use('/api/leave-setting', leaveSettingRoute)
 
 app.all("*", (req, res, next) => {
    let err = new Error(`Can't find ${req.originalUrl} on the server.`);

@@ -9,12 +9,22 @@ const role = require('../models/roleSchema');
 const getAdminEmail = require("../helper/getAdminEmail");
 const workReportMail = require('../handler/workReportEmail');
 const moment = require('moment');
+const { default: mongoose } = require('mongoose');
+const user = require('../models/userSchema');
 
 // * check data 
 const validation = [
-    check("description", "Description is a required field.").notEmpty(),
     check("title", "Title is a required field.").notEmpty(),
-    check("date", "date is a required field.").notEmpty()
+    check("date", "Invalid Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: "YYYY-MM-DD" }),
+    check("totalHours", "Total hours is a required field.").notEmpty(),
+    check('work', "Insert values ​​into the array.").isArray(),
+    check('work.*.projectId', "Project is a required field.").notEmpty(),
+    check('work.*.description', "Description is a required field.").notEmpty(),
+    check('work.*.hours', "Working hours is a required field.").notEmpty().custom(async (totalHours, { req }) => {
+        if (totalHours && (totalHours.toString() > 24 || totalHours.toString() < 0)) {
+            throw new Error('Working hours range from 0 to 24 hours.')
+        }
+    })
 ]
 
 // Create a new reportRequestRoute
@@ -29,6 +39,7 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(422).json({ error: [...new Set(err)], success: false })
         }
+        let { work, date, totalHours, title,wortReportId } = req.body;
         if (req.body.title === "Add Request") {
             let data = await report.findOne({ date: req.body.date, userId: req.user._id })
 
@@ -38,34 +49,96 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
         // role name get 
         let roleData = await role.findOne({ _id: req.user.role_id });
 
-        let reportRequestData = new ReportRequestSchema({
+        const reportRequestData = new ReportRequestSchema({
+            title: title,
             userId: req.user._id,
-            description: req.body.description,
-            title: req.body.title,
-            date: req.body.date
+            work,
+            date,
+            totalHours,
+            wortReportId : wortReportId && wortReportId
         })
-        await reportRequestData.save();
+        const reportRequestDataResponse = await reportRequestData.save();
 
         const emaiList = await getAdminEmail();
 
-        const contentData = {
-            timestamp : moment(req.body.date).format("DD MMM YYYY"),
-            name : req.user?.first_name.concat(" ", req.user.last_name),
-            explanation : req.body.description,
-            title: req.body.title
-        }
+        const workData = await ReportRequestSchema.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(reportRequestDataResponse._id)
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work'
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    _id: {
+                        userId: '$userId',
+                        createdAt: '$createdAt',
+                        updatedAt: '$updatedAt',
+                        totalHours: '$totalHours',
+                        date: '$date',
+                        _id: '$_id',
 
-        await workReportMail(res,emaiList,contentData)
-
-        if (roleData.name.toLowerCase() !== "admin") {
-            if (req.body.title === "Add Request") {
-                createActivity(req.user._id, "Add work report request added by")
-            } else {
-                createActivity(req.user._id, "Edit work report request added by")
+                    },
+                    work: {
+                        $push: '$work'
+                    }
+                }
+            },
+            {
+                $project: {
+                    userId: "$_id.userId",
+                    totalHours: "$_id.totalHours",
+                    date: "$_id.date",
+                    work: 1,
+                    updatedAt: "$_id.updatedAt",
+                    _id: "$_id._id",
+                }
             }
-        }
+        ])
 
-        return res.status(201).json({ success: true, message: "Your request has been sent successfully." })
+        if (workData.length !== 0) {
+        
+            const workResult = workData[0].work.map((val) => {
+                return { description: val.description, hours: val.hours, project: val.project?.name }
+            })
+
+            const contentData = {
+                timestamp: moment(req.body.date).format("DD MMM YYYY"),
+                name: req.user?.first_name.concat(" ", req.user.last_name),
+                title: req.body.title,
+                work: workResult,
+                totalHours,
+                isAdmin : false
+            }
+
+            await workReportMail(res, emaiList, contentData)
+
+            if (roleData.name.toLowerCase() !== "admin") {
+                if (req.body.title === "Add Request") {
+                    createActivity(req.user._id, "Add work report request added by")
+                } else {
+                    createActivity(req.user._id, "Edit work report request added by")
+                }
+            }
+
+        }
+        return res.status(201).json({ success: true, message: "Your request has been sent successfully."})
 
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
@@ -74,7 +147,7 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
 // delete reportRequestRoutes
 ReportRequestRoute.delete('/:id', async (req, res) => {
     try {
-        const reportRequestRoute = await ReportRequestSchema.findByIdAndDelete(req.params.id);
+        const reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({_id : req.params.id},{$set : {deleteAt: new Date()}});
         if (reportRequestRoute) {
             return res.status(200).json({ success: true, message: "Request has been successfully deleted." })
         } else {
@@ -89,7 +162,26 @@ ReportRequestRoute.delete('/:id', async (req, res) => {
 // status change reportRequestRoutes
 ReportRequestRoute.put('/:id', async (req, res) => {
     try {
-        const reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({_id : req.params.id},{$set : {status : "Read"}});
+        const { status } = req.body;
+
+        let reportRequestRoute = "";
+
+        if(status === "Read"){
+           reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({ _id: req.params.id }, { $set: { status: status } });
+        }else{
+            reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({ _id: req.params.id }, { $set: { status: status,deleteAt: new Date() } });
+
+            if(reportRequestRoute){
+                const users = await user.findOne({ _id: reportRequestRoute.userId})
+    
+                await workReportMail(res, users.email, {
+                    status: "Declined",
+                    timestamp: moment(reportRequestRoute.date).format("DD MMM YYYY"),
+                    name: users?.first_name.concat(" ", users.last_name),
+                    isAdmin :true
+                });
+            }
+        }
         if (reportRequestRoute) {
             return res.status(200).json({ success: true, message: "Status changed successfully." })
         } else {
