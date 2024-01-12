@@ -27,29 +27,13 @@ const regulationMail = async (res,maillist,contentData) => {
 
         const from = `D9ithub <${SMTP_EMAIL}>`
 
-        if(typeof maillist === "object"){
-            // multiple send mail 
-            maillist.forEach(async(element) => {
-    
-                const mailOptions = {
-                    from: from,
-                    to: element.email,
-                    subject: "Attendance Adjustment",
-                    html: content
-                };
-                await transporter.sendMail(mailOptions);
-            });
-        }else{
-            const mailOptions = {
-                from: from,
-                to: maillist,
-                subject: "Attendance Adjustment",
-                html: content
-            };
-            await transporter.sendMail(mailOptions);
-        }
-
-        
+        const mailOptions = {
+            from: from,
+            to: maillist,
+            subject: "Attendance Adjustment",
+            html: content
+        };
+        await transporter.sendMail(mailOptions);
 }
 
 module.exports = regulationMail;

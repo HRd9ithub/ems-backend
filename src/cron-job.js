@@ -21,10 +21,8 @@ const sendBirthdayMail = async () => {
                 })
 
                 if (birthList.length !== 0) {
-                    const adminMailArray = await getAdminEmail();
+                    const adminMail = await getAdminEmail();
         
-                    const adminMail = adminMailArray.map((val) => val.email);
-
                     const birthListData = birthList.map((val) =>{
                         return { name : val?.first_name.concat(" ",val?.last_name)}
                     })
