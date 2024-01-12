@@ -25,7 +25,9 @@ const getAdminEmail = async () => {
             }
         }
     ]);
-    return list
+    const adminMail = list.map((val) => val.email);
+
+    return adminMail
 }
 
 module.exports = getAdminEmail;

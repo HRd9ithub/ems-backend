@@ -15,25 +15,13 @@ const leaveEmail = async (res, mailsubject, email, content) => {
     const from = `D9ithub <${SMTP_EMAIL}>`
 
     // multiple send mail 
-    if (typeof email === "object") {
-        email.forEach(async (element) => {
-            const mailOptions = {
-                from: from,
-                to: element.email,
-                subject: mailsubject,
-                html: content
-            };
-            await transporter.sendMail(mailOptions);
-        });
-    } else {
-        const mailOptions = {
-            from: from,
-            to: email,
-            subject: mailsubject,
-            html: content
-        };
-        await transporter.sendMail(mailOptions);
-    }
+    const mailOptions = {
+        from: from,
+        to: email,
+        subject: mailsubject,
+        html: content
+    };
+    await transporter.sendMail(mailOptions);
 }
 
 module.exports = leaveEmail;
