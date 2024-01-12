@@ -26,48 +26,91 @@
           </tr>
           <tr>
             <td style="text-align: center;">
-              <h2 style="margin-top: 0px">Work Report Request</h2>
+              <h2 style="margin-top: 0px">
+                <% if(isAdmin) { %>
+                  Work Report Request Status
+                <% } else { %>
+                  Work Report Request
+                <% } %>
+              </h2>
             </td>
           </tr>
           <tr style="width: 100%; text-align:justify;">
             <table style="width: 100%;">
               <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
-                <td style="padding: .625rem;">
-                  <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
-                    <strong style="color: #084c89;">Dear Sir/Ma'am,</strong>
-                  </p>
-                  <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
-                    <strong>
-                      I hope this email finds you well. I am writing to request
-                      <% if(title==="Add Request" ) { %>
-                         the following details to add a new record.
-                      <% } else { %>
-                          a change from my older details to the details provided below.
-                      <% } %>
-                    </strong>
-                  </p>
-                  <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
-                    Name: <strong style="color: #084c89;">
-                      <%= name %>
-                    </strong>
-                  </p>
-                  <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
-                    Date: <strong style="color: #084c89;">
-                      <%= timestamp %>
-                    </strong>
-                  </p>
-                  <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
-                    Title: <strong style="color: #084c89;">
-                      <%= title %>
-                    </strong>
-                  </p>
-                  <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
-                    <%= explanation %>
-                  </p>
-                  <p style="color: #000000;font-size: .9375rem;text-align:justify;">
-                  <div><strong style="color: #084c89;">Thanks & Regards</strong></div>
-                  </p>
-                </td>
+                <% if(isAdmin) { %>
+                  <td style="padding: .625rem;">
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
+                      <strong style="color: #084c89;">Dear <%= name %>,</strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
+                      <strong>
+                        <% if(status === "Declined") { %>
+                          I trust this message finds you well. Thank you for your prompt attention to the work report request for <%= timestamp %>. However, after careful consideration, we regret to inform you that your request for submitting the work report has been <span style="color: red;">declined</span> at this time.
+                        <% } else { %>
+                          I trust this email finds you well. I am pleased to inform you that your work report for <%= timestamp %> has been successfully <%= status %> to our records. 
+                        <% } %>
+                      </strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                      <strong >
+                        Feel free to reach out if you have any questions or need further assistance.
+                      </strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;text-align:justify;">
+                    <div><strong>Thanks & Regards</strong></div>
+                    <div><strong style="color: #084c89;">D9ithub</strong></div>
+                    </p>
+                  </td>
+                <% } else { %>
+                  <td style="padding: .625rem;">
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
+                      <strong style="color: #084c89;">Dear Sir/Ma'am,</strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600;text-align:justify;">
+                      <strong>
+                        I hope this email finds you well. I am writing to request
+                        <% if(title==="Add Request" ) { %>
+                            the following details to add a new record.
+                        <% } else { %>
+                            a change from my older details to the details provided below.
+                        <% } %>
+                      </strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                      Name: <strong style="color: #084c89;">
+                        <%= name %>
+                      </strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                      Date: <strong style="color: #084c89;">
+                        <%= timestamp %>
+                      </strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                      Title: <strong style="color: #084c89;">
+                        <%= title %>
+                      </strong>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                      Work Details: 
+                        <ol style="padding: 0;">
+                          <% work.forEach((val,id) => { %>
+                              <div>
+                                    <strong style="color: #084c89;""><%= id + 1 %> <%= val.project %> (<%= val.hours %>)</strong>
+                                    <div className='w-100 text-wrap'>
+                                      <%- val.description %>
+                                    </div>
+                              </div>
+                          <% }) %>
+                        </ol>
+                    </p>
+                    <p style="color: #000000;font-size: .9375rem;text-align:justify;">
+                    <div><strong>Thanks & Regards</strong></div>
+                    <div><strong style="color: #084c89;"><%= name %></strong></div>
+                    </p>
+                  </td>
+                <% } %>
               </tr>
               <tr>
                 <td style="border-top:1px solid #e5e5e5"></td>

@@ -5,7 +5,7 @@ const moment = require("moment");
 
 const offDay = ["Saturday", "Sunday"]
 
-const leaveCalcution = async (userId,type) => {
+const leaveCalculation = async (userId,type) => {
     const identify = true;
     let total = 0;
     // Start of the current year
@@ -86,4 +86,4 @@ const leaveCalcution = async (userId,type) => {
    return total
 }
 
-module.exports = leaveCalcution
+module.exports = leaveCalculation

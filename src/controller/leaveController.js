@@ -13,7 +13,7 @@ const path = require("path");
 const fs = require("fs");
 const ejs = require("ejs");
 const getAdminEmail = require("../helper/getAdminEmail");
-const leaveCalcution = require("../helper/leaveCalcution");
+const leaveCalculation = require("../helper/leaveCalculation");
 const leave_setting = require("../models/leaveSettingSchema");
 
 // add leave
@@ -210,7 +210,7 @@ const getLeave = async (req, res) => {
         ])
 
         let calData = Promise.all(leaveSettingData.map(async (val) => {
-            let cal = await leaveCalcution(id || req.user._id, val.leaveTypeId);
+            let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId);
             return { cal, type: val.leavetype,totalLeave : val.totalLeave }
         }))
 
@@ -460,33 +460,82 @@ const getNotifications = async (req, res) => {
         ])
         let result = await ReportRequestSchema.aggregate([
             {
-                $lookup:
-                    { from: "users", localField: 'userId', foreignField: "_id", as: 'user' }
+                $match : {
+                    deleteAt: {$exists : false}
+                }
             },
             {
-                $unwind:
-                {
-                    path: "$user",
+                $unwind: {
+                    path: '$work'
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work.project',
                     preserveNullAndEmptyArrays: true
                 }
             },
-            { $sort: { "createdAt": -1 } },
+            {
+                $group: {
+                    _id: '$_id',
+                    _id: {
+                        userId: '$userId',
+                        createdAt: '$createdAt',
+                        updatedAt: '$updatedAt',
+                        totalHours: '$totalHours',
+                        date: '$date',
+                        title: '$title',
+                        status: '$status',
+                        wortReportId: '$wortReportId',
+                        _id: '$_id',
+
+                    },
+                    work: {
+                        $push: '$work'
+                    }
+                }
+            },{
+                $lookup: {
+                    from: "users", localField: "_id.userId", foreignField: "_id", as: "user"
+                }
+            },
+            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+            {
+                $match: {
+                    // "user.status": "Active",
+                    "user.delete_at": { $exists: false },
+                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { "user.leaveing_date": { $eq: null } },
+                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+            },
             {
                 $project: {
-                    userId: 1,
-                    createdAt: 1,
-                    title: 1,
-                    description: 1,
-                    date: 1,
-                    status: 1,
+                    userId: "$_id.userId",
+                    totalHours: "$_id.totalHours",
+                    date: "$_id.date",
+                    work: 1,
+                    title : "$_id.title",
+                    status : "$_id.status",
+                    wortReportId : "$_id.wortReportId",
+                    updatedAt: "$_id.updatedAt",
+                    _id: "$_id._id",
                     "user.employee_id": 1,
                     "user.profile_image": 1,
                     "user.first_name": 1,
-                    "user.last_name": 1,
-                    "user.status": 1
+                    "user.status": 1,
+                    "user.last_name": 1
                 }
             }
         ])
+
         let totalNotification = leaveData.concat(result);
 
         let notification = totalNotification.sort((a, b) => {

@@ -13,10 +13,12 @@ const ejs = require('ejs');
 // const pdf = require("pdf-creator-node");
 const reportDownloadSchema = require("../models/reportDownloadSchema");
 const { default: puppeteer } = require("puppeteer");
+const workReportMail = require("../handler/workReportEmail");
+const ReportRequestSchema = require("../models/reportRequestSchema");
 
 const createReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours } = req.body;
+        let { userId, work, date, totalHours,_id } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -30,12 +32,12 @@ const createReport = async (req, res) => {
 
         let error = []
         // user id check 
-        let users = await user.findOne({ _id: req.body.userId || req.user._id })
+        const users = await user.findOne({ _id: userId || req.user._id})
         if (!users) { error.push("User is not exists.") }
 
         if (error.length !== 0) return res.status(422).json({ error: error, success: false });
 
-        let reports = await report.findOne({
+        const reports = await report.findOne({
             $and: [
                 { "userId": { $eq: new mongoose.Types.ObjectId(userId || req.user._id) } },
                 { "date": { $eq: date } },
@@ -55,6 +57,16 @@ const createReport = async (req, res) => {
         if (req.permissions.name.toLowerCase() !== "admin") {
             createActivity(req.user._id, "Work report added by")
         }
+
+        if(_id){
+            await workReportMail(res, users.email, {
+                status: "added",
+                timestamp: moment(req.body.date).format("DD MMM YYYY"),
+                name: users?.first_name.concat(" ", users.last_name),
+                isAdmin :true
+            });
+            await ReportRequestSchema.findByIdAndUpdate({_id :_id},{$set : {deleteAt: new Date(),status : "Approved"}});
+        }
         return res.status(201).json({ success: true, message: "Data added successfully." })
 
     } catch (error) {
@@ -65,7 +77,7 @@ const createReport = async (req, res) => {
 // update report 
 const updateReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours } = req.body;
+        let { userId, work, date, totalHours,_id } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -79,7 +91,7 @@ const updateReport = async (req, res) => {
 
         let error = []
         // user id check 
-        let users = await user.findOne({ _id: req.body.userId })
+        const users = await user.findOne({ _id: userId || req.user._id })
         if (!users) { error.push("User is not exists.") }
 
         if (error.length !== 0) return res.status(422).json({ error: error, success: false });
@@ -94,7 +106,7 @@ const updateReport = async (req, res) => {
             return res.status(400).json({ success: true, error: ["Please note that you are only able to submit one report per day."] })
         }
 
-        let updateData = await report.findByIdAndUpdate({ _id: req.params.id }, {
+        const updateData = await report.findByIdAndUpdate({ _id: req.params.id }, {
             userId: userId || req.user._id,
             work,
             date,
@@ -102,6 +114,15 @@ const updateReport = async (req, res) => {
         }, { new: true })
 
         if (updateData) {
+            if(_id){
+                await workReportMail(res, users.email, {
+                    status: "updated",
+                    timestamp: moment(req.body.date).format("DD MMM YYYY"),
+                    name: users?.first_name.concat(" ", users.last_name),
+                    isAdmin :true
+                });
+                await ReportRequestSchema.findByIdAndUpdate({_id :_id},{$set : {deleteAt: new Date(),status : "Approved"}});
+            }
             return res.status(200).json({ success: true, message: "Data updated successfully." })
         } else {
             return res.status(404).json({ success: false, message: "Record is not found." })

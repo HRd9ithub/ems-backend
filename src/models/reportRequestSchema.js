@@ -5,13 +5,34 @@ const reportRequestSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "user"
     },
+    wortReportId: {
+        type: String
+    },
     date: {
         type: String,
         require: true
     },
-    description: {
+    totalHours : {
         type: String,
-        require: true
+        required : [true , "Totak hours is a required field."]
+    },
+    work : {
+        type:[{
+            projectId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "project",
+                required: "Project is a required field."
+            },
+            description: {
+                type: String,
+                required: "Description is a required field."
+            },
+            hours: {
+                type: String,
+                required: "Working hours is a required field."
+            },
+        }],
+        required: true
     },
     title: {
         type: String,
@@ -20,8 +41,11 @@ const reportRequestSchema = new mongoose.Schema({
     status: {
         type: String,
         require: true,
-        enum: ['Pending', "Read"],
+        enum: ['Pending', "Read","Approved","Declined"],
         default: "Pending"
+    },
+    deleteAt: {
+        type: Date
     }
 }, {
     timestamps: true,

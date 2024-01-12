@@ -28,17 +28,27 @@ const workReportMail = async (res, maillist, contentData) => {
     const from = `D9ithub <${SMTP_EMAIL}>`
 
 
-    // multiple send mail 
-    maillist.forEach(async (element) => {
-
+    if(typeof maillist === "object"){
+        // multiple send mail 
+        maillist.forEach(async (element) => {
+    
+            const mailOptions = {
+                from: from,
+                to: element.email,
+                subject: "Work Report Request",
+                html: content
+            };
+            await transporter.sendMail(mailOptions);
+        });
+    }else{
         const mailOptions = {
             from: from,
-            to: element.email,
-            subject: "Work Report Request",
+            to: maillist,
+            subject: "Work Report Request Status",
             html: content
         };
-        await transporter.sendMail(mailOptions);
-    });
+        await transporter.sendMail(mailOptions);  
+    }
 }
 
 module.exports = workReportMail;
