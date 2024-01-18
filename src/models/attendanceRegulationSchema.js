@@ -20,13 +20,25 @@ const attendanceRegulationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    isDelete: {
-        type: Boolean
+    deleteAt: {
+        type: Date,
+        required : false
+    },
+    status: {
+        type: String,
+        require: true,
+        enum: ['Pending', "Read","Approved","Declined"],
+        default: "Pending"
     },
     attendanceId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'Attendance'
+    },
+    comment : {
+        type : String,
+        required : false,
+        default : null
     }
 },
     {

@@ -19,9 +19,9 @@ const addAccount = async (req, res) => {
 
         // check data exist or not
         const data = await account.findOne({ user_id: req.body.user_id })
-        let roleData = await role.findOne({ _id: req.user.role_id });
+        const roleData = await role.findOne({ _id: req.user.role_id });
 
-        let value = {
+        const value = {
             bank_name: encryptData(req.body.bank_name),
             account_number: encryptData(req.body.account_number),
             ifsc_code: encryptData(req.body.ifsc_code),

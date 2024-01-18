@@ -24,7 +24,7 @@ const forgetEmail = async (res,email, mailsubject, url) => {
         let content = ejs.render(htmlstring, {action_url: url });
 
         let from = `D9ithub <${SMTP_EMAIL}>`
-        var mailOptions = {
+        const mailOptions = {
             from: from,
             to: email,
             subject: mailsubject,

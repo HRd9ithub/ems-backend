@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 const user = require('../models/userSchema');
 const SECRET_KEY = process.env.SECRET_KEY;
 const moment = require("moment");
-const { RemoveToken } = require('../helper/removeToken');
 
 async function Auth(req, res, next) {
     const authorization = req.headers.authorization;
@@ -24,16 +23,13 @@ async function Auth(req, res, next) {
                     req.user = data
                     next()
                 } else {
-                    RemoveToken(decode._id)
                     return res.status(401).json({ message: "Unauthenticated.", success: false })
                 }
             } else {
-                RemoveToken(decode._id )
                 return res.status(401).json({ message: "Unauthenticated.", success: false })
             }
         }
         else {
-            RemoveToken(decode._id )
             return res.status(401).json({ message: "Unauthenticated.", success: false })
         }
     } catch (error) {
