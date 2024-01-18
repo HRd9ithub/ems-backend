@@ -15,6 +15,7 @@ const ejs = require("ejs");
 const getAdminEmail = require("../helper/getAdminEmail");
 const leaveCalculation = require("../helper/leaveCalculation");
 const leave_setting = require("../models/leaveSettingSchema");
+const Attendance_Regulation = require("../models/attendanceRegulationSchema");
 
 // add leave
 const addLeave = async (req, res) => {
@@ -378,10 +379,18 @@ const changeStatus = async (req, res) => {
 // change status view all
 const notificationDelete = async (req, res) => {
     try {
-        const { id, report } = req.query;
+        const { id, report, attendance } = req.query;
 
         if (report) {
-            const result = await ReportRequestSchema.findByIdAndDelete({ _id: id })
+            const result = await ReportRequestSchema.findByIdAndUpdate({ _id: id },{$set: {
+                deleteAt: new Date()
+            }})
+        } else if(attendance){
+            const attendance_detail = await Attendance_Regulation.findByIdAndUpdate({ _id: id }, {
+                $set: {
+                    deleteAt: new Date()
+                }
+            }, { new: true });
         } else {
             const leave_detail = await Leave.findByIdAndUpdate({ _id: id }, {
                 $set: {
@@ -526,6 +535,7 @@ const getNotifications = async (req, res) => {
                     status : "$_id.status",
                     wortReportId : "$_id.wortReportId",
                     updatedAt: "$_id.updatedAt",
+                    createdAt: "$_id.createdAt",
                     _id: "$_id._id",
                     "user.employee_id": 1,
                     "user.profile_image": 1,
@@ -535,14 +545,51 @@ const getNotifications = async (req, res) => {
                 }
             }
         ])
+        const data = await Attendance_Regulation.aggregate([
+            {
+                $match: {
+                    deleteAt: { $exists: false }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$user",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    userId: 1,
+                    clock_in: 1,
+                    attendanceId: 1,
+                    clock_out: 1,
+                    explanation: 1,
+                    status : 1,
+                    createdAt : 1,
+                    updatedAt : 1,
+                    "user.first_name": 1,
+                    "user.last_name": 1,
+                    "user.profile_image": 1,
+                }
+            }
+        ]);
 
-        let totalNotification = leaveData.concat(result);
+        const totalNotification = leaveData.concat(result,data);
 
-        let notification = totalNotification.sort((a, b) => {
+        const notification = totalNotification.sort((a, b) => {
             return new Date(b.createdAt) - new Date(a.createdAt)
         })
 
-        let finalData = notification.map((val) => {
+        const finalData = notification.map((val) => {
             return {
                 ...val,
                 user: {
@@ -553,7 +600,7 @@ const getNotifications = async (req, res) => {
                 }
             }
         })
-        res.status(200).json({ message: "Notification data fetch successfully.", success: true, notification: finalData })
+        return res.status(200).json({ message: "Notification data fetch successfully.", success: true, notification: finalData })
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }

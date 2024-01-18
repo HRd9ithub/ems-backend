@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { getAttendance, clockIn, clockOut, sendRegulationMail, getAttendanceRegulation, addComment } = require("../controller/attendanceController");
+const { getAttendance, clockIn, clockOut, sendRegulationMail, getAttendanceRegulation, addComment, statusChange } = require("../controller/attendanceController");
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
 const { attendancePermission } = require("../middlewares/permission");
@@ -21,9 +21,8 @@ const regulationValidation = [
     check("userId", "User id is a required field.").isMongoId(),
 ]
 const commentValidation = [
-    // check("comment", "Comment is a required field.").notEmpty(),
     check("attendanceRegulationId", "attendanceRegulation id is a required field.").isMongoId(),
-    check('status', "Invalid status.Please enter the status value for Reject or Approved.").isIn(["Reject", "Approved"]),
+    check('status', "Invalid status.Please enter the status value for Declined or Approved.").isIn(["Declined", "Approved"]),
 ]
 
 // add clock-in time for route
@@ -43,6 +42,9 @@ route.get("/regulation/:id", Auth, attendancePermission, getAttendanceRegulation
 
 // ADD COMMENT 
 route.post('/comment', Auth, commentValidation, addComment)
+
+// status change
+route.patch('/:id', Auth, statusChange)
 
 
 module.exports = route;
