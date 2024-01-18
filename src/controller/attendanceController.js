@@ -6,7 +6,6 @@ const decryptData = require("../helper/decryptData");
 const user = require("../models/userSchema");
 const regulationMail = require("../handler/regulationEmail");
 const Attendance_Regulation = require("../models/attendanceRegulationSchema");
-const Attendance_Comment = require("../models/attendanceCommentSchema");
 const getAdminEmail = require("../helper/getAdminEmail");
 
 // add clockIn time
@@ -20,7 +19,7 @@ const clockIn = async (req, res) => {
         })
         // check data validation error
         if (!errors.isEmpty()) {
-            return res.status(400).json({ error: err, success: false })
+            return res.status(422).json({ error: err, success: false })
         }
 
         const data = {
@@ -135,7 +134,7 @@ const getAttendance = async (req, res) => {
                     pipeline: [
                         {
                             $match: {
-                                "isDelete": { $exists: false },
+                                "deleteAt": { $exists: false },
                             }
                         }
                     ], as: "attendance_regulations_data"
@@ -149,7 +148,6 @@ const getAttendance = async (req, res) => {
             },
             {
                 $match: {
-                    // "attendance_regulations_data.isDelete": { $exists: false },
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -218,7 +216,7 @@ const sendRegulationMail = async (req, res) => {
         }
         const name = userData.first_name.concat(" ", userData.last_name);
 
-        const Attendance_Regulation_data = await Attendance_Regulation.findOne({ attendanceId: id, isDelete: { $exists: false } })
+        const Attendance_Regulation_data = await Attendance_Regulation.findOne({ attendanceId: id, deleteAt: { $exists: false } })
         if (Attendance_Regulation_data) {
             return res.status(422).json({ success: false, error: ["The request already exists."] })
         }
@@ -257,7 +255,7 @@ const getAttendanceRegulation = async (req, res) => {
             {
                 $match: {
                     attendanceId: new mongoose.Types.ObjectId(id),
-                    isDelete: { $exists: false }
+                    deleteAt: { $exists: false }
                 }
             },
             {
@@ -337,19 +335,16 @@ const addComment = async (req, res) => {
 
         // generate total hours
         req.body.totalHours = moment.utc(moment(clock_out, "HH:mm:ss A").diff(moment(clock_in, "HH:mm:ss A"))).format("HH:mm")
-
-        await Attendance_Comment.create({
-            comment, status, attendanceRegulationId
-        });
-
+        
         const contentData = {
-            isAdmin :false,status: status,comment,action_url : `${process.env.RESET_PASSWORD_URL}/attendance`
+            isAdmin :false, status: status,comment, action_url : `${process.env.RESET_PASSWORD_URL}/attendance`
         }
+
         const response = await attendance.findByIdAndUpdate({ _id: attendanceRegulationId }, { $set: { clock_in, clock_out, totalHours: req.body.totalHours } })
         const userData = await user.findOne({_id : response.userId},{email : 1})
         await regulationMail(res,userData.email, contentData);
 
-        await Attendance_Regulation.updateMany({ attendanceId: attendanceRegulationId }, { $set: { isDelete: true } })
+        await Attendance_Regulation.updateMany({ attendanceId: attendanceRegulationId }, { $set: {  comment, status, deleteAt : new Date()} })
 
         return res.status(200).json({ message: "Data added successfully.", success: true })
     } catch (error) {
@@ -357,4 +352,27 @@ const addComment = async (req, res) => {
     }
 }
 
-module.exports = { clockIn, clockOut, getAttendance, sendRegulationMail, getAttendanceRegulation, addComment }
+// status change
+const statusChange = async(req,res)=> {
+    try {
+        const { id } = req.params;
+
+        const errors = expressValidator.validationResult(req)
+
+        let err = errors.array().map((val) => {
+            return val.msg
+        })
+        // check data validation error
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: err, success: false })
+        }
+
+        const response = await Attendance_Regulation.findByIdAndUpdate({ _id: id }, { $set: { status : "Read" } })
+
+        return res.status(200).json({ message: "Status updated successfully.", success: true })
+    } catch (error) {
+        return res.status(500).json({ message: error.message || "Interner server error.", success: false })
+    }
+}
+
+module.exports = { clockIn, clockOut, getAttendance, sendRegulationMail, getAttendanceRegulation, addComment, statusChange }
