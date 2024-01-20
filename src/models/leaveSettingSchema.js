@@ -9,6 +9,9 @@ const leaveSettingSchema = new mongoose.Schema({
     totalLeave: {
         type: Number,
         required: true
+    },
+    deleteAt : {
+        type : Date
     }
 },
 {timestamps: true}

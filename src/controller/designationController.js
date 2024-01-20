@@ -65,10 +65,10 @@ const updateDesignation = async (req, res) => {
     }
 }
 
-// update designation function
+// delete designation function
 const deleteDesignation = async (req, res) => {
     try {
-        const response = await designation.findByIdAndDelete({ _id: req.params.id })
+        const response = await designation.findByIdAndUpdate({ _id: req.params.id },{$set : {deleteAt : new Date()}})
         if (response) {
             return res.status(200).json({ success: true, message: "Data deleted successfully." })
         } else {
@@ -84,7 +84,7 @@ const deleteDesignation = async (req, res) => {
 const getDesignation = async (req, res) => {
     try {
         // get designation data in database
-        const data = await designation.find()
+        const data = await designation.find({deleteAt : { $exists : false}})
 
         return res.status(200).json({ success: true, message: "Successfully fetch a designation data.", data: data, permissions: req.permissions })
 

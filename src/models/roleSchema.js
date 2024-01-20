@@ -28,7 +28,10 @@ const roleSchema = new mongoose.Schema({
             type: Number,
             required: true
         },
-    }]
+    }],
+    deleteAt: {
+        type: Date
+    }
 }, {
     timestamps: true
 })

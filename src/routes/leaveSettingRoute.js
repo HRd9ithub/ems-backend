@@ -1,6 +1,6 @@
 const express = require("express");
 const Auth = require("../middlewares/authtication");
-const { createLeaveSetting, getLeaveSetting, updateLeaveSetting } = require("../controller/leaveSettingController");
+const { createLeaveSetting, getLeaveSetting, updateLeaveSetting, deleteLeaveSetting } = require("../controller/leaveSettingController");
 const { body } = require("express-validator");
 const { leaveSettingPermission } = require("../middlewares/permission");
 const route = express.Router();
@@ -18,6 +18,8 @@ route.use(leaveSettingPermission);
 route.post("/",leaveSettingValidation,createLeaveSetting);
 
 route.put("/:id",leaveSettingValidation,updateLeaveSetting);
+
+route.delete("/:id",deleteLeaveSetting);
 
 route.get("/",getLeaveSetting);
 

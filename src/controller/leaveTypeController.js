@@ -67,7 +67,7 @@ const updateLeaveType = async (req, res) => {
 // delete leaveType function
 const deleteLeaveType = async (req, res) => {
     try {
-        const response = await leaveType.findByIdAndDelete({ _id: req.params.id })
+        const response = await leaveType.findByIdAndUpdate({ _id: req.params.id }, { $set: { deleteAt: new Date() } })
         if (response) {
             return res.status(200).json({ success: true, message: "Data deleted successfully." })
         } else {
@@ -83,7 +83,7 @@ const deleteLeaveType = async (req, res) => {
 const getLeaveType = async (req, res) => {
     try {
         // get leaveType data in database
-        const data = await leaveType.find()
+        const data = await leaveType.find({ deleteAt: { $exists: false } });
 
         return res.status(200).json({ success: true, message: "Successfully fetch a leaveType data.", data: data, permissions: req.permissions })
 
