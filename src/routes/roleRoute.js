@@ -1,7 +1,7 @@
 const express = require("express");
 const Auth = require("../middlewares/authtication");
 const { body } = require("express-validator");
-const { addRole, singleRole, checkRole, updateRole, getRole } = require("../controller/roleController");
+const { addRole, singleRole, checkRole, updateRole, getRole, deleteUserRole } = require("../controller/roleController");
 const role = require("../models/roleSchema");
 const { rolePermission } = require("../middlewares/permission");
 const roleRoute = express.Router();
@@ -34,7 +34,9 @@ body("permissions", "Permissions is required.").notEmpty()
 ],updateRole)
 
 // get api
-
 roleRoute.get('/',Auth,rolePermission,getRole)
+
+// delete api
+roleRoute.delete('/:id',Auth,rolePermission,deleteUserRole)
 
 module.exports = roleRoute

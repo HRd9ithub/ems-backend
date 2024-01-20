@@ -70,7 +70,7 @@ const updateProject = async (req, res) => {
 // update project function
 const deleteProject = async (req, res) => {
     try {
-        const response = await project.findByIdAndUpdate({ _id: req.params.id })
+        const response = await project.findByIdAndUpdate({ _id: req.params.id }, {$set :{deleteAt : new Date()}})
         if (response) {
             return res.status(200).json({ success: true, message: "Data deleted successfully." })
         } else {
@@ -85,7 +85,7 @@ const deleteProject = async (req, res) => {
 const getProject = async (req, res) => {
     try {
         // get project data in database
-        const data = await project.find()
+        const data = await project.find({deleteAt : { $exists : false}})
 
         return res.status(200).json({ success: true, message: "Successfully fetch a project data.", data: data,permissions : req.permissions })
 
