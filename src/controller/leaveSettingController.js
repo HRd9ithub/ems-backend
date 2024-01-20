@@ -70,6 +70,11 @@ const getLeaveSetting = async(req,res) => {
     try {
         const response = await leave_setting.aggregate([
             {
+                $match : {
+                    deleteAt : { $exists : false}
+                }
+            },
+            {
                 $lookup: {
                     from: "leavetypes", localField: "leaveTypeId", foreignField: "_id", as: "leaveType"
                 }
@@ -93,8 +98,24 @@ const getLeaveSetting = async(req,res) => {
     }
 }
 
+// delete
+const deleteLeaveSetting = async(req,res) => {
+    try {
+        const response = await leave_setting.findByIdAndUpdate({ _id: req.params.id },{$set : {deleteAt : new Date()}})
+        if (response) {
+            return res.status(200).json({ success: true, message: "Data deleted successfully." })
+        } else {
+            return res.status(404).json({ success: false, message: "Record is not found." })
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+    }
+}
+
 module.exports = {
     createLeaveSetting,
     getLeaveSetting,
-    updateLeaveSetting
+    updateLeaveSetting,
+    deleteLeaveSetting
 }

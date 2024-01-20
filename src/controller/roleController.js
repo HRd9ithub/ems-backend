@@ -76,7 +76,7 @@ const updateRole = async (req, res) => {
 // get function
 const getRole = async (req, res) => {
     try {
-        const response = await role.find().select("-permissions");
+        const response = await role.find({ deleteAt: { $exists: false } }).select("-permissions");
 
         return res.status(200).json({ success: true, message: "successfully fetch for user role.", data: response, permissions: req.permissions })
 
@@ -157,4 +157,19 @@ const checkRole = async (req, res) => {
     }
 }
 
-module.exports = { addRole, getRole, updateRole, singleRole, checkRole }
+// delete funcation
+const deleteUserRole = async (req, res) => {
+    try {
+        const response = await role.findByIdAndUpdate({ _id: req.params.id }, { $set: { deleteAt: new Date() } })
+        if (response) {
+            return res.status(200).json({ success: true, message: "Data deleted successfully." })
+        } else {
+            return res.status(404).json({ success: false, message: "Record is not found." })
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+    }
+}
+
+module.exports = { addRole, getRole, updateRole, singleRole, checkRole, deleteUserRole }

@@ -5,6 +5,9 @@ const designationSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
+    },
+    deleteAt : {
+        type : Date
     }
 },
     { timestamps: true }
