@@ -75,8 +75,8 @@ const addLeave = async (req, res) => {
         const content = ejs.render(htmlstring, {
             name,
             leave_type: leave_type.name,
-            date: duration == 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-            duration: duration == 1 ? duration + " day" : duration + " days",
+            date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+            duration: duration < 1 ? "Half day" : duration == 1 ?  duration + " day" : duration + " days",
             leave_for,
             action_url: url,
             isAdmin: true,
@@ -212,7 +212,7 @@ const getLeave = async (req, res) => {
 
         let calData = Promise.all(leaveSettingData.map(async (val) => {
             let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId);
-            return { cal, type: val.leavetype,totalLeave : val.totalLeave }
+            return { remaining: val.totalLeave - cal, type: val.leavetype,totalLeave : val.totalLeave }
         }))
 
         return res.status(200).json({ message: "Leave data fetch successfully.", success: true, leaveSettings: await calData, data: result, permissions: req.permissions })
@@ -296,8 +296,8 @@ const updateLeave = async (req, res) => {
         const content = ejs.render(htmlstring, {
             name,
             leave_type: leave_type.name,
-            date: duration == 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-            duration: duration == 1 ? duration + " day" : duration + " days",
+            date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+            duration: duration < 1 ? "Half day" : duration == 1 ?  duration + " day" : duration + " days",
             leave_for,
             action_url: url,
             isAdmin: true,

@@ -11,6 +11,8 @@ const moment = require("moment");
 const createActivity = require("../helper/addActivity");
 const encryptData = require("../helper/encrptData");
 const decryptData = require("../helper/decryptData");
+const leave_setting = require("../models/leaveSettingSchema");
+const leaveCalculation = require("../helper/leaveCalculation");
 
 // create user function
 const createUser = async (req, res) => {
@@ -245,7 +247,36 @@ const getUser = async (req, res) => {
                 status: item.status
             }
         })
-        return res.status(200).json({ success: true, message: "User data fetch successfully.", data: result, permissions: req.permissions })
+
+        const leaveSettingData = await leave_setting.aggregate([
+            {
+                $lookup: {
+                    from: "leavetypes", localField: "leaveTypeId", foreignField: "_id", as: "leaveType"
+                }
+            },
+            { $unwind: { path: "$leavetype", preserveNullAndEmptyArrays: true } },
+            {
+                $project : {
+                    "leaveTypeId": 1,
+                    "totalLeave": 1,
+                    "createdAt": 1,
+                    "updatedAt": 1,
+                    "leavetype":  { $first: "$leaveType.name" }
+                }
+            }
+        ])
+
+        const finalResult = Promise.all(result.map(async(elem) => {
+            const data= Promise.all(leaveSettingData.map(async (val) => {
+                let cal = await leaveCalculation(elem._id, val.leaveTypeId);
+                return { remaining: val.totalLeave - cal, type: val.leavetype,totalLeave : val.totalLeave, shortName: val.leavetype.slice(0,1) + "L"}
+            }))
+            const leave = await data;
+            const final = {...elem , leave}
+            return final
+        }));
+
+        return res.status(200).json({ success: true, message: "User data fetch successfully.", permissions: req.permissions, data: await finalResult })
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
