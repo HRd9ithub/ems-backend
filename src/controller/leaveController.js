@@ -192,28 +192,31 @@ const getLeave = async (req, res) => {
             }
         })
 
-        const leaveSettingData = await leave_setting.aggregate([
-            {
-                $lookup: {
-                    from: "leavetypes", localField: "leaveTypeId", foreignField: "_id", as: "leaveType"
+        let calData = [];
+        if(identify){
+            const leaveSettingData = await leave_setting.aggregate([
+                {
+                    $lookup: {
+                        from: "leavetypes", localField: "leaveTypeId", foreignField: "_id", as: "leaveType"
+                    }
+                },
+                { $unwind: { path: "$leavetype", preserveNullAndEmptyArrays: true } },
+                {
+                    $project : {
+                        "leaveTypeId": 1,
+                        "totalLeave": 1,
+                        "createdAt": 1,
+                        "updatedAt": 1,
+                        "leavetype":  { $first: "$leaveType.name" }
+                    }
                 }
-            },
-            { $unwind: { path: "$leavetype", preserveNullAndEmptyArrays: true } },
-            {
-                $project : {
-                    "leaveTypeId": 1,
-                    "totalLeave": 1,
-                    "createdAt": 1,
-                    "updatedAt": 1,
-                    "leavetype":  { $first: "$leaveType.name" }
-                }
-            }
-        ])
-
-        let calData = Promise.all(leaveSettingData.map(async (val) => {
-            let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId);
-            return { remaining: val.totalLeave - cal, type: val.leavetype,totalLeave : val.totalLeave }
-        }))
+            ])
+    
+            calData = Promise.all(leaveSettingData.map(async (val) => {
+                let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId);
+                return { remaining: val.totalLeave - cal, type: val.leavetype,totalLeave : val.totalLeave }
+            }))
+        }
 
         return res.status(200).json({ message: "Leave data fetch successfully.", success: true, leaveSettings: await calData, data: result, permissions: req.permissions })
     } catch (error) {
