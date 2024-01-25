@@ -136,6 +136,7 @@ const updateReport = async (req, res) => {
 // get report function
 const getReport = async (req, res) => {
     try {
+        const findResult = [];
         let { id, startDate, endDate } = req.query;
         var a = moment(startDate, "YYYY-MM-DD");
         var b = moment(endDate, "YYYY-MM-DD");
@@ -144,10 +145,69 @@ const getReport = async (req, res) => {
             return res.status(400).json({ message: "Please enter startDate and endDate.", success: false })
         }
 
-        let identify = id || req.permissions.name.toLowerCase() !== "admin";
+        const identify = id || req.permissions.name.toLowerCase() !== "admin";
+
+        const leaveData = await Leave.aggregate([
+            {
+                $match: {
+                    user_id: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) },
+                    $and: [
+                        { "status": { $eq: "Approved" } },
+                    ],
+                    $or: [
+                        {
+                            $and: [
+                                { 'from_date': { $gte: startDate } },
+                                { 'from_date': { $lte: endDate } },
+                            ]
+                        },
+                        {
+                            $and: [
+                                { 'to_date': { $gte: startDate } },
+                                { 'to_date': { $lte: endDate } },
+                            ]
+                        }
+                    ],
+                }
+            },
+            {
+                $lookup: {
+                    from: "users", localField: "user_id", foreignField: "_id", as: "user"
+                }
+            },
+            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+            {
+                $match: {
+                    // "user.status": "Active",
+                    "user.delete_at": { $exists: false },
+                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { "user.leaveing_date": { $eq: null } },
+                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+            },
+        ]);
+
+        leaveData.forEach((val) => {
+            var from_date = moment(val.from_date);
+            var to_date = moment(val.to_date);
+            let day = to_date.diff(from_date, 'days');
+            for (let index = 0; index <= day; index++) {
+                var new_date = moment(val.from_date).add(index, "d");
+                findResult.push({
+                    date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for, user: {
+                        first_name: decryptData(val.user.first_name),
+                        last_name: decryptData(val.user.last_name),
+                        status: val.user.status,
+                    },
+                    userId: val.user_id
+                })
+            }
+        })
 
         // get project data in database
-        let data = await report.aggregate([
+        const data = await report.aggregate([
             {
                 $match: {
                     $and: [
@@ -223,7 +283,7 @@ const getReport = async (req, res) => {
             }
         ])
 
-        let result = data.map((val) => {
+        const result = data.map((val) => {
             return {
                 ...val,
                 user: {
@@ -233,7 +293,31 @@ const getReport = async (req, res) => {
                 }
             }
         })
-        return res.status(200).json({ success: true, message: "Successfully fetch a work report data.", data: result, permissions: req.permissions })
+
+        findResult.push(...result);
+
+        const record = findResult.filter((val) => {
+            return new Date(val.date) <= new Date(endDate) && new Date(val.date) >= new Date(startDate)
+        });
+
+
+        // Custom sorting function
+        function customSort(a, b) {
+            // First, compare dates
+            if (a.date < b.date) return -1;
+            if (a.date > b.date) return 1;
+
+            // If dates are equal, compare IDs
+            if (a.userId < b.userId) return -1;
+            if (a.userId > b.userId) return 1;
+
+            // If both dates and IDs are equal
+            return 0;
+        }
+
+        // Sort the array using the custom sorting function
+        record.sort(customSort);
+        return res.status(200).json({ success: true, message: "Successfully fetch a work report data.", data: record, permissions: req.permissions })
 
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
