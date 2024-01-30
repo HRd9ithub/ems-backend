@@ -10,7 +10,6 @@ const moment = require("moment");
 const path = require("path");
 const fs = require('fs');
 const ejs = require('ejs');
-// const pdf = require("pdf-creator-node");
 const reportDownloadSchema = require("../models/reportDownloadSchema");
 const { default: puppeteer } = require("puppeteer");
 const workReportMail = require("../handler/workReportEmail");
@@ -18,7 +17,7 @@ const ReportRequestSchema = require("../models/reportRequestSchema");
 
 const createReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours,_id } = req.body;
+        let { userId, work, date, totalHours, _id } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -32,7 +31,7 @@ const createReport = async (req, res) => {
 
         let error = []
         // user id check 
-        const users = await user.findOne({ _id: userId || req.user._id})
+        const users = await user.findOne({ _id: userId || req.user._id })
         if (!users) { error.push("User is not exists.") }
 
         if (error.length !== 0) return res.status(422).json({ error: error, success: false });
@@ -58,14 +57,14 @@ const createReport = async (req, res) => {
             createActivity(req.user._id, "Work report added by")
         }
 
-        if(_id){
+        if (_id) {
             await workReportMail(res, users.email, {
                 status: "added",
                 timestamp: moment(req.body.date).format("DD MMM YYYY"),
                 name: users?.first_name.concat(" ", users.last_name),
-                isAdmin :true
+                isAdmin: true
             });
-            await ReportRequestSchema.findByIdAndUpdate({_id :_id},{$set : {deleteAt: new Date(),status : "Approved"}});
+            await ReportRequestSchema.findByIdAndUpdate({ _id: _id }, { $set: { deleteAt: new Date(), status: "Approved" } });
         }
         return res.status(201).json({ success: true, message: "Data added successfully." })
 
@@ -77,7 +76,7 @@ const createReport = async (req, res) => {
 // update report 
 const updateReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours,_id } = req.body;
+        let { userId, work, date, totalHours, _id } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -114,14 +113,14 @@ const updateReport = async (req, res) => {
         }, { new: true })
 
         if (updateData) {
-            if(_id){
+            if (_id) {
                 await workReportMail(res, users.email, {
                     status: "updated",
                     timestamp: moment(req.body.date).format("DD MMM YYYY"),
                     name: users?.first_name.concat(" ", users.last_name),
-                    isAdmin :true
+                    isAdmin: true
                 });
-                await ReportRequestSchema.findByIdAndUpdate({_id :_id},{$set : {deleteAt: new Date(),status : "Approved"}});
+                await ReportRequestSchema.findByIdAndUpdate({ _id: _id }, { $set: { deleteAt: new Date(), status: "Approved" } });
             }
             return res.status(200).json({ success: true, message: "Data updated successfully." })
         } else {
@@ -334,8 +333,8 @@ const generatorPdf = async (req, res) => {
         const startDate = moment(month).startOf('month').format('YYYY-MM-DD');
         const endDate = date ? moment(new Date()).format('YYYY-MM-DD') : moment(month).endOf('month').format('YYYY-MM-DD');
 
-        // get project data in database
-        let data = await report.aggregate([
+        // get report data in database
+        const reportData = await report.aggregate([
             {
                 $match: {
                     $and: [
@@ -389,37 +388,55 @@ const generatorPdf = async (req, res) => {
             }
         ])
 
-        let data1 = await Leave.find({
+        // leave data get
+        const leaveData = await Leave.find({
             user_id: new mongoose.Types.ObjectId(id || req.user._id),
             $and: [
                 { "status": { $eq: "Approved" } },
-                { "from_date": { $gte: moment(startDate).format("YYYY-MM-DD") } },
-                { "to_date": { $lte: moment(endDate).format("YYYY-MM-DD") } },
-            ]
+            ],
+            $or: [
+                {
+                    $and: [
+                        { 'from_date': { $gte: startDate } },
+                        { 'from_date': { $lte: endDate } },
+                    ]
+                },
+                {
+                    $and: [
+                        { 'to_date': { $gte: startDate } },
+                        { 'to_date': { $lte: endDate } },
+                    ]
+                }
+            ],
         })
-        let data2 = await holiday.find({
+
+        // holiday data get
+        const holidayData = await holiday.find({
             $and: [
                 { "date": { $gte: moment(startDate).format("YYYY-MM-DD") } },
                 { "date": { $lte: moment(endDate).format("YYYY-MM-DD") } },
             ]
         })
 
-        let filterData = [...data, ...data2]
+        let filterData = [...reportData, ...holidayData];
 
-        data1.forEach((val) => {
+        // leave between days add
+        leaveData.forEach((val) => {
             var from_date = moment(val.from_date);
             var to_date = moment(val.to_date);
             let day = to_date.diff(from_date, 'days');
             for (let index = 0; index <= day; index++) {
                 var new_date = moment(val.from_date).add(index, "d");
-                let result = data2.find((item) => {
+                let result = holidayData.find((item) => {
                     return item.date === moment(new_date).format("YYYY-MM-DD")
                 })
                 if (!result) {
                     filterData.push({ date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for })
                 }
             }
-        })
+        });
+
+        // add saturday and sunday
         var mstartDate = moment(startDate);
         var mendDate = moment(endDate);
         let days = mendDate.diff(mstartDate, 'days');
@@ -430,29 +447,34 @@ const generatorPdf = async (req, res) => {
             }
         }
 
-        let finalData = [];
+        let removeDuplicateData = [];
 
         filterData.map((val) => {
-            if (finalData.length === 0) {
-                finalData.push(val)
+            if (removeDuplicateData.length === 0) {
+                removeDuplicateData.push(val)
             } else {
-                let isDublication = finalData.filter((elem) => {
+                let isDublication = removeDuplicateData.filter((elem) => {
                     return val.date == elem.date
                 })
                 if (isDublication.length === 0 || (val?.name !== "Saturday" && val?.name !== "Sunday")) {
-                    finalData.push(val)
+                    removeDuplicateData.push(val)
                 }
             }
         });
 
-        let Test = finalData.sort(function (a, b) {
+        const record = removeDuplicateData.filter((val) => {
+            return new Date(val.date) <= new Date(endDate) && new Date(val.date) >= new Date(startDate)
+        });
+
+        // final data store
+        const finalRecord = record.sort(function (a, b) {
             return new Date(a.date) - new Date(b.date)
         });
 
-        let userData = await user.findOne({ _id: id }, { first_name: 1, last_name: 1 });
+        const userData = await user.findOne({ _id: id }, { first_name: 1, last_name: 1 });
 
-        //  ? generate total 
-        let holidayCount = data2.length;
+        // ==================================  summary section
+        const holidayCount = holidayData.length;
         // let dayCount = moment(endDate).format('DD');
 
         function uniqByKeepLast(data, key) {
@@ -461,21 +483,21 @@ const generatorPdf = async (req, res) => {
 
         }
 
-        let dayCount = uniqByKeepLast(Test, it => it.date).length;
+        const dayCount = uniqByKeepLast(finalRecord, it => it.date).length;
 
-        let halfLeave = Test.filter((cur) => {
+        const halfLeave = finalRecord.filter((cur) => {
             return cur.leave_for && cur.leave_for === "Half"
         })
-        let fullLeave = Test.filter((cur) => {
+        const fullLeave = finalRecord.filter((cur) => {
             return cur.leave_for && cur.leave_for === "Full"
         })
-        let LeaveCount = fullLeave.length + (halfLeave.length / 2);
+        const LeaveCount = fullLeave.length + (halfLeave.length / 2);
 
-        let totalHours = data.reduce((accumulator, currentValue) => {
+        const totalHours = reportData.reduce((accumulator, currentValue) => {
             return (accumulator.totalHours ? Number(accumulator.totalHours) : Number(accumulator)) + Number(currentValue.totalHours)
         }, 0)
 
-        let summary = {
+        const summary = {
             LeaveCount,
             halfLeave: halfLeave.length,
             fullLeave: fullLeave.length,
@@ -487,47 +509,11 @@ const generatorPdf = async (req, res) => {
         const response = await reportDownloadSchema.create({
             name: userData.first_name.concat(" ", userData.last_name),
             summary: summary,
-            reports: Test
+            reports: finalRecord
         })
 
-        return res.status(200).json({ data: Test, success: true, summary: summary, id: response._id })
+        return res.status(200).json({ data: finalRecord, success: true, summary: summary, id: response._id })
 
-
-        // // read file
-        // const html = fs.readFileSync(path.join(__dirname, '../../public/template.html'), "utf8");
-
-        // // pdf option
-        // const options = {
-        //     format: "A4",
-        //     orientation: "portrait",
-        //     border: "10mm",
-        //     childProcessOptions: {
-        //         env: {
-        //           OPENSSL_CONF: '/dev/null',
-        //         },
-        //       }
-        // };
-
-        // const ejsData = {
-        //     reports: Test,
-        //     summary: summary,
-        //     name: userData.first_name.concat(" ", userData.last_name)
-        // }
-
-        // const pathData = path.join(__dirname, `../../public/document/${id.concat(".", "pdf")}`)
-        // const document = {
-        //     html: html,
-        //     data: ejsData,
-        //     path: pathData
-        // };
-
-        // pdf.create(document, options)
-        //     .then((result) => {
-        //         return res.status(200).json({ data: Test, success: true, summary: summary })
-        //     })
-        //     .catch((error) => {
-        //         return res.status(400).json({ message: 'Something went wrong. please try again.', stack: error.message, success: false });
-        //     });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
