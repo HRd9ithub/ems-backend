@@ -22,7 +22,8 @@ const leaveCalculation = async (userId,type) => {
                 $and: [
                     { "from_date": { $gte: startOfYear } },
                     { "to_date": { $lte: endOfYear } },
-                ]
+                ],
+                deleteAt: {$exists: false}
             }
         },
         {

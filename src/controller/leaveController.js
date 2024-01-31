@@ -47,7 +47,8 @@ const addLeave = async (req, res) => {
                     ]
                 }
             ],
-            status: { $ne: "Declined" }
+            status: { $ne: "Declined" },
+            deleteAt: { $exists: false }
         })
 
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
@@ -76,7 +77,7 @@ const addLeave = async (req, res) => {
             name,
             leave_type: leave_type.name,
             date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-            duration: duration < 1 ? "Half day" : duration == 1 ?  duration + " day" : duration + " days",
+            duration: duration < 1 ? "Half day" : duration == 1 ? duration + " day" : duration + " days",
             leave_for,
             action_url: url,
             isAdmin: true,
@@ -121,6 +122,7 @@ const getLeave = async (req, res) => {
                         { from_date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
                         { to_date: { $lte: moment(endDate).format("YYYY-MM-DD") } }
                     ],
+                    deleteAt: { $exists: false }
                 }
             },
             {
@@ -193,7 +195,7 @@ const getLeave = async (req, res) => {
         })
 
         let calData = [];
-        if(identify){
+        if (identify) {
             const leaveSettingData = await leave_setting.aggregate([
                 {
                     $lookup: {
@@ -202,19 +204,19 @@ const getLeave = async (req, res) => {
                 },
                 { $unwind: { path: "$leavetype", preserveNullAndEmptyArrays: true } },
                 {
-                    $project : {
+                    $project: {
                         "leaveTypeId": 1,
                         "totalLeave": 1,
                         "createdAt": 1,
                         "updatedAt": 1,
-                        "leavetype":  { $first: "$leaveType.name" }
+                        "leavetype": { $first: "$leaveType.name" }
                     }
                 }
             ])
-    
+
             calData = Promise.all(leaveSettingData.map(async (val) => {
                 let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId);
-                return { remaining: val.totalLeave - cal, type: val.leavetype,totalLeave : val.totalLeave }
+                return { remaining: val.totalLeave - cal, type: val.leavetype, totalLeave: val.totalLeave }
             }))
         }
 
@@ -270,7 +272,8 @@ const updateLeave = async (req, res) => {
                     ]
                 }
             ],
-            status: { $ne: "Declined" }
+            status: { $ne: "Declined" },
+            deleteAt: { $exists: false }
         });
 
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
@@ -300,7 +303,7 @@ const updateLeave = async (req, res) => {
             name,
             leave_type: leave_type.name,
             date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-            duration: duration < 1 ? "Half day" : duration == 1 ?  duration + " day" : duration + " days",
+            duration: duration < 1 ? "Half day" : duration == 1 ? duration + " day" : duration + " days",
             leave_for,
             action_url: url,
             isAdmin: true,
@@ -342,32 +345,32 @@ const changeStatus = async (req, res) => {
         }
 
         const leave_detail = await Leave.findByIdAndUpdate({ _id: id }, {
-            status
+            status, isNotificationStatus: false
         }, { new: true })
 
         if (leave_detail) {
-            // if (leave_detail.status !== "Read") {
-            // user email
-            const userEmail = await user.findOne({ _id: leave_detail.user_id }, { "email": 1 });
-            const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
+            if (!leave_detail.deleteAt) {
+                // user email
+                const userEmail = await user.findOne({ _id: leave_detail.user_id }, { "email": 1 });
+                const url = `${process.env.RESET_PASSWORD_URL}/leaves`;
 
-            // get file path
-            const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
+                // get file path
+                const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
 
-            // read file using fs module
-            const htmlstring = fs.readFileSync(filepath).toString();
-            // add data dynamic
-            const content = ejs.render(htmlstring, {
-                status,
-                action_url: url,
-                isAdmin: false
-            });
+                // read file using fs module
+                const htmlstring = fs.readFileSync(filepath).toString();
+                // add data dynamic
+                const content = ejs.render(htmlstring, {
+                    status,
+                    action_url: url,
+                    isAdmin: false
+                });
 
-            const mailsubject = 'Leave Request Status';
-            // mail content
+                const mailsubject = 'Leave Request Status';
+                // mail content
 
-            await leaveEmail(res, mailsubject, userEmail.email, content);
-            // }
+                await leaveEmail(res, mailsubject, userEmail.email, content);
+            }
 
             return res.status(200).json({ message: "Status Updated successfully.", success: true })
         } else {
@@ -385,10 +388,12 @@ const notificationDelete = async (req, res) => {
         const { id, report, attendance } = req.query;
 
         if (report) {
-            const result = await ReportRequestSchema.findByIdAndUpdate({ _id: id },{$set: {
-                deleteAt: new Date()
-            }})
-        } else if(attendance){
+            const result = await ReportRequestSchema.findByIdAndUpdate({ _id: id }, {
+                $set: {
+                    deleteAt: new Date()
+                }
+            })
+        } else if (attendance) {
             const attendance_detail = await Attendance_Regulation.findByIdAndUpdate({ _id: id }, {
                 $set: {
                     deleteAt: new Date()
@@ -461,6 +466,8 @@ const getNotifications = async (req, res) => {
                     "duration": 1,
                     "reason": 1,
                     "status": 1,
+                    "isNotificationStatus": 1,
+                    deleteAt: 1,
                     "leaveType": { $first: "$leaveType.name" },
                     "user.employee_id": 1,
                     "user.profile_image": 1,
@@ -472,8 +479,8 @@ const getNotifications = async (req, res) => {
         ])
         let result = await ReportRequestSchema.aggregate([
             {
-                $match : {
-                    deleteAt: {$exists : false}
+                $match: {
+                    deleteAt: { $exists: false }
                 }
             },
             {
@@ -511,7 +518,7 @@ const getNotifications = async (req, res) => {
                         $push: '$work'
                     }
                 }
-            },{
+            }, {
                 $lookup: {
                     from: "users", localField: "_id.userId", foreignField: "_id", as: "user"
                 }
@@ -534,9 +541,9 @@ const getNotifications = async (req, res) => {
                     totalHours: "$_id.totalHours",
                     date: "$_id.date",
                     work: 1,
-                    title : "$_id.title",
-                    status : "$_id.status",
-                    wortReportId : "$_id.wortReportId",
+                    title: "$_id.title",
+                    status: "$_id.status",
+                    wortReportId: "$_id.wortReportId",
                     updatedAt: "$_id.updatedAt",
                     createdAt: "$_id.createdAt",
                     _id: "$_id._id",
@@ -576,9 +583,9 @@ const getNotifications = async (req, res) => {
                     attendanceId: 1,
                     clock_out: 1,
                     explanation: 1,
-                    status : 1,
-                    createdAt : 1,
-                    updatedAt : 1,
+                    status: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
                     "user.first_name": 1,
                     "user.last_name": 1,
                     "user.profile_image": 1,
@@ -586,7 +593,7 @@ const getNotifications = async (req, res) => {
             }
         ]);
 
-        const totalNotification = leaveData.concat(result,data);
+        const totalNotification = leaveData.concat(result, data);
 
         const notification = totalNotification.sort((a, b) => {
             return new Date(b.createdAt) - new Date(a.createdAt)
@@ -612,15 +619,45 @@ const getNotifications = async (req, res) => {
 // delete leave
 const deleteLeave = async (req, res) => {
     try {
+        const roleData = await role.findOne({ _id: req.user.role_id });
         let { id } = req.params;
-
-        const deletedUser = await Leave.findByIdAndDelete({ _id: id });
+        let deletedUser = ""
+        if(roleData.name.toLowerCase() !== "admin"){
+            deletedUser = await Leave.findByIdAndUpdate({ _id: id }, { deleteAt: new Date(), isNotificationStatus: true, isNotification: true });
+        }else{
+            deletedUser = await Leave.findByIdAndUpdate({ _id: id }, { deleteAt: new Date() });
+        }
 
         if (deletedUser) {
-            let roleData = await role.findOne({ _id: req.user.role_id });
             if (roleData.name.toLowerCase() !== "admin") {
-                createActivity(req.user._id, "Leave deleted by")
+                createActivity(req.user._id, "Leave deleted by");
             }
+            // get email id for send mail
+            const maillist = await getAdminEmail();
+
+            // user name
+            const userName = await user.findOne({ _id: deletedUser.user_id }, { "first_name": 1, "last_name": 1 });
+            const name = userName.first_name.concat(" ", userName.last_name);
+            const convertFromDate = moment(deletedUser.from_date).format("DD MMM YYYY");
+            const convertToDate = moment(deletedUser.to_date).format("DD MMM YYYY");
+
+            let mailsubject = 'Leave Cancellation Notification';
+            // get file path
+            const filepath = path.resolve(__dirname, "../../views/LeaveCancelTemplate.ejs");
+
+            // read file using fs module
+            const htmlstring = fs.readFileSync(filepath).toString();
+            // add data dynamic
+            const content = ejs.render(htmlstring, {
+                name,
+                date: deletedUser.duration == 1 || deletedUser.duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+                day: deletedUser.duration ,
+                status: deletedUser.status,
+                reason: deletedUser.reason
+            });
+
+            await leaveEmail(res, mailsubject, maillist, content);
+
             return res.status(200).json({ success: true, message: "Data deleted successfully." });
         } else {
             return res.status(404).json({ success: false, message: "Record is not found." });

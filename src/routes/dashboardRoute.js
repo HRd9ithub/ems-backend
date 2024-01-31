@@ -50,7 +50,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
 
         // leave request count
         let leaveRequest = await Leave.aggregate([
-            {$match : {status : "Pending"}},
+            {$match : {status : "Pending" ,deleteAt: {$exists: false}}},
             {
                 $lookup:
                 {
@@ -89,6 +89,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                         { $gte: ["$to_date", moment(new Date()).format("YYYY-MM-DD")] },
                     ]
                 },
+                deleteAt: {$exists: false}
             }
         },
         {
