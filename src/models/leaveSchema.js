@@ -38,6 +38,13 @@ const leaveSchema = new mongoose.Schema({
    isNotification: {
       type: Boolean,
       default : true,
+   },
+   isNotificationStatus: {
+      type: Boolean,
+      default : false,
+   },
+   deleteAt:{
+      type: Date
    }
 }, {
    timestamps: true,

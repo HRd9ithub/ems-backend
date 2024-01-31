@@ -167,6 +167,7 @@ const getReport = async (req, res) => {
                             ]
                         }
                     ],
+                    deleteAt: {$exists: false}
                 }
             },
             {
@@ -408,6 +409,7 @@ const generatorPdf = async (req, res) => {
                     ]
                 }
             ],
+            deleteAt: {$exists: false}
         })
 
         // holiday data get
