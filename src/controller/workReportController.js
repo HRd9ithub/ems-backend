@@ -189,23 +189,6 @@ const getReport = async (req, res) => {
             },
         ]);
 
-        leaveData.forEach((val) => {
-            var from_date = moment(val.from_date);
-            var to_date = moment(val.to_date);
-            let day = to_date.diff(from_date, 'days');
-            for (let index = 0; index <= day; index++) {
-                var new_date = moment(val.from_date).add(index, "d");
-                findResult.push({
-                    date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for, user: {
-                        first_name: decryptData(val.user.first_name),
-                        last_name: decryptData(val.user.last_name),
-                        status: val.user.status,
-                    },
-                    userId: val.user_id
-                })
-            }
-        })
-
         // get project data in database
         const data = await report.aggregate([
             {
@@ -294,9 +277,44 @@ const getReport = async (req, res) => {
             }
         })
 
-        findResult.push(...result);
+        leaveData.forEach((val) => {
+            var from_date = moment(val.from_date);
+            var to_date = moment(val.to_date);
+            let day = to_date.diff(from_date, 'days');
+            for (let index = 0; index <= day; index++) {
+                var new_date = moment(val.from_date).add(index, "d");
+                findResult.push({
+                    date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for, user: {
+                        first_name: decryptData(val.user.first_name),
+                        last_name: decryptData(val.user.last_name),
+                        status: val.user.status,
+                    },
+                    userId: val.user_id,
+                    _id : val._id
+                })
+            }
+        });
 
-        const record = findResult.filter((val) => {
+        const halfleave = [];
+        const temp = result.map((val) => {
+            const entry = findResult.find((elem) => {
+                return elem.date === val.date
+            });
+            if(entry && entry.leave_for === "Half"){
+                halfleave.push(entry._id)
+               return {...val, leave_for: "Half Leave"}
+            }else{
+                return val
+            }
+        });
+
+        const removehlafleave = findResult.filter((val) => {
+            return !halfleave.includes(val._id)
+        })
+
+        temp.push(...removehlafleave);
+
+        const record = temp.filter((val) => {
             return new Date(val.date) <= new Date(endDate) && new Date(val.date) >= new Date(startDate)
         });
 
@@ -327,6 +345,7 @@ const getReport = async (req, res) => {
 // create preview
 const generatorPdf = async (req, res) => {
     try {
+        const findResult = [];
         let { id, month } = req.body;
         month.concat("-", "1");
         const date = moment(new Date()).format("YYYY-MM") == month
@@ -420,8 +439,7 @@ const generatorPdf = async (req, res) => {
             ]
         })
 
-        let filterData = [...reportData, ...holidayData];
-
+        
         // leave between days add
         leaveData.forEach((val) => {
             var from_date = moment(val.from_date);
@@ -433,10 +451,29 @@ const generatorPdf = async (req, res) => {
                     return item.date === moment(new_date).format("YYYY-MM-DD")
                 })
                 if (!result) {
-                    filterData.push({ date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for })
+                    findResult.push({ date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for, _id : val._id })
                 }
             }
         });
+
+        const halfleave = [];
+        const filterData = reportData.map((val) => {
+            const entry = findResult.find((elem) => {
+                return elem.date === val.date
+            });
+            if(entry && entry.leave_for === "Half"){
+                halfleave.push(entry._id)
+               return {...val, leave_for: "Half Leave"}
+            }else{
+                return val
+            }
+        });
+        
+        const removehlafleave = findResult.filter((val) => {
+            return !halfleave.includes(val._id)
+        })
+        filterData.push(...removehlafleave, ...holidayData);
+
 
         // add saturday and sunday
         var mstartDate = moment(startDate);
