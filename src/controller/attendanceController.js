@@ -22,14 +22,25 @@ const clockIn = async (req, res) => {
             return res.status(422).json({ error: err, success: false })
         }
 
-        const data = {
-            userId: req.user._id,
-            timestamp: moment(new Date()).format("YYYY-MM-DD"),
-            clock_in: req.body.clock_in
-        }
+        const attendanceData = await attendance.findOne({ timestamp: moment(new Date()).format("YYYY-MM-DD"), userId: req.user._id })
 
-        // add database data
-        let response = await attendance.create(data)
+        if (attendanceData) {
+            await attendance.findByIdAndUpdate({_id: attendanceData._id},{$push: {
+                time: {
+                    clock_in: req.body.clock_in
+                }
+              }})
+
+        } else {
+            const data = {
+                userId: req.user._id,
+                timestamp: moment(new Date()).format("YYYY-MM-DD"),
+                time: [{ clock_in: req.body.clock_in }]
+            }
+
+            // add database data
+            let response = await attendance.create(data)
+        }
 
         return res.status(201).json({
             message: "Data added successfully.",
@@ -60,12 +71,19 @@ const clockOut = async (req, res) => {
             return res.status(400).json({ error: err, success: false })
         }
 
-        const record = await attendance.findOne({ _id: id })
+        const record = await attendance.findOne({ "time._id": id });
+
+        const data = record.time.find((val) =>{
+            return val._id == id
+        })
 
         // generate total hours
-        req.body.totalHours = moment.utc(moment(req.body.clock_out, "HH:mm:ss A").diff(moment(record.clock_in, "HH:mm:ss A"))).format("HH:mm")
+        req.body.totalHours = moment.utc(moment(req.body.clock_out, "HH:mm:ss A").diff(moment(data.clock_in, "HH:mm:ss A"))).format("HH:mm")
 
-        const attendanceData = await attendance.findByIdAndUpdate({ _id: id }, req.body)
+        const attendanceData = await attendance.updateOne(
+            { 'time._id': id },
+            { $set: { 'time.$.clock_out': req.body.clock_out, 'time.$.totalHours': req.body.totalHours } 
+        })
 
         if (attendanceData) {
             return res.status(200).json({
@@ -104,32 +122,9 @@ const getAttendance = async (req, res) => {
                 }
             },
             {
-                $group:
-                {
-                    _id: {
-                        date: "$timestamp",
-                        userId: "$userId"
-                    },
-                    "child": { "$push": "$$ROOT" },
-                }
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "_id.userId",
-                    foreignField: "_id",
-                    as: "user"
-                }
-            },
-            {
-                $unwind: {
-                    "path": "$user",
-                }
-            },
-            {
                 $lookup: {
                     from: "attendance_regulations",
-                    localField: "child._id",
+                    localField: "time._id",
                     foreignField: "attendanceId",
                     pipeline: [
                         {
@@ -147,6 +142,26 @@ const getAttendance = async (req, res) => {
                 }
             },
             {
+                $group:
+                {
+                    _id: "$userId",
+                    "child": { "$push": "$$ROOT" },
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $unwind: {
+                    "path": "$user",
+                }
+            },
+            {
                 $match: {
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
@@ -156,13 +171,12 @@ const getAttendance = async (req, res) => {
                     ]
                 }
             },
-            { $sort: { "_id.date": -1 } },
+            { $sort: { "child.timestamp": 1 } },
             {
                 $project: {
                     child: 1,
                     "user.first_name": 1,
                     "user.last_name": 1,
-                    attendance_regulations_data: 1
                 }
             }
         ])
@@ -198,7 +212,7 @@ const getAttendance = async (req, res) => {
 // regulation mail send function
 const sendRegulationMail = async (req, res) => {
     try {
-        const { clockIn, clockOut, explanation, userId, timestamp, id } = req.body;
+        const { clockIn, clockOut, explanation, timestamp, id } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -210,11 +224,7 @@ const sendRegulationMail = async (req, res) => {
             return res.status(400).json({ error: err, success: false })
         }
 
-        const userData = await user.findOne({ _id: userId })
-        if (!userData) {
-            return res.status(404).json({ success: false, message: 'Employee not found' })
-        }
-        const name = userData.first_name.concat(" ", userData.last_name);
+        const name = req.user.first_name.concat(" ", req.user.last_name);
 
         const Attendance_Regulation_data = await Attendance_Regulation.findOne({ attendanceId: id, deleteAt: { $exists: false } })
         if (Attendance_Regulation_data) {
@@ -226,13 +236,13 @@ const sendRegulationMail = async (req, res) => {
         const convertDate = moment(timestamp).format("DD MMM YYYY");
 
         const contentData = {
-            clock_in_time : clockIn, clock_out_time : clockOut, explanation, timestamp :convertDate , name,isAdmin :true
+            clock_in_time: clockIn, clock_out_time: clockOut, explanation, timestamp: convertDate, name, isAdmin: true
         }
 
         await regulationMail(res, maillist, contentData);
 
         await Attendance_Regulation.create({
-            userId,
+            userId : req.user._id,
             clock_in: clockIn,
             clock_out: clockOut,
             explanation,
@@ -276,7 +286,7 @@ const getAttendanceRegulation = async (req, res) => {
                 $lookup: {
                     from: "attendances",
                     localField: "attendanceId",
-                    foreignField: "_id",
+                    foreignField: "time._id",
                     as: "attendance"
                 }
             },
@@ -321,7 +331,7 @@ const getAttendanceRegulation = async (req, res) => {
 // ADD COMMENT 
 const addComment = async (req, res) => {
     try {
-        const { comment, status, attendanceRegulationId, clock_in, clock_out } = req.body;
+        const { comment, status, attendanceRegulationId, clock_in, clock_out, userId } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -333,18 +343,22 @@ const addComment = async (req, res) => {
             return res.status(400).json({ error: err, success: false })
         }
 
-        // generate total hours
-        req.body.totalHours = moment.utc(moment(clock_out, "HH:mm:ss A").diff(moment(clock_in, "HH:mm:ss A"))).format("HH:mm")
-        
         const contentData = {
-            isAdmin :false, status: status,comment, action_url : `${process.env.RESET_PASSWORD_URL}/attendance`
+            isAdmin: false, status: status, comment, action_url: `${process.env.RESET_PASSWORD_URL}/attendance`
         }
+        if(status === "Approved"){
+            // generate total hours
+            req.body.totalHours = moment.utc(moment(clock_out, "HH:mm:ss A").diff(moment(clock_in, "HH:mm:ss A"))).format("HH:mm")
+    
+            const response = await attendance.updateOne(
+                { 'time._id': attendanceRegulationId },
+                { $set: { 'time.$.clock_in': clock_in, 'time.$.clock_out': clock_out, 'time.$.totalHours': req.body.totalHours } 
+            })
+        }
+        const userData = await user.findOne({ _id: userId }, { email: 1 })
+        await regulationMail(res, userData.email, contentData);
 
-        const response = await attendance.findByIdAndUpdate({ _id: attendanceRegulationId }, { $set: { clock_in, clock_out, totalHours: req.body.totalHours } })
-        const userData = await user.findOne({_id : response.userId},{email : 1})
-        await regulationMail(res,userData.email, contentData);
-
-        await Attendance_Regulation.updateMany({ attendanceId: attendanceRegulationId }, { $set: {  comment, status, deleteAt : new Date()} })
+        await Attendance_Regulation.updateMany({ attendanceId: attendanceRegulationId, deleteAt: {$exists: false} }, { $set: { comment, status, deleteAt: new Date() } })
 
         return res.status(200).json({ message: "Data added successfully.", success: true })
     } catch (error) {
@@ -353,7 +367,7 @@ const addComment = async (req, res) => {
 }
 
 // status change
-const statusChange = async(req,res)=> {
+const statusChange = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -367,7 +381,7 @@ const statusChange = async(req,res)=> {
             return res.status(400).json({ error: err, success: false })
         }
 
-        const response = await Attendance_Regulation.findByIdAndUpdate({ _id: id }, { $set: { status : "Read" } })
+        const response = await Attendance_Regulation.findByIdAndUpdate({ _id: id }, { $set: { status: "Read" } })
 
         return res.status(200).json({ message: "Status updated successfully.", success: true })
     } catch (error) {
