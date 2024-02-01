@@ -145,6 +145,9 @@
                                 </td>
                                 <td style="width :15%; text-align: center;">
                                     <%= reports[i].userId && reports[i].totalHours %>
+                                    <% if(reports[i].leave_for) { %>
+                                        <span style="color: red;"> (<%= reports[i].leave_for %>)</span>
+                                    <% } %>
                                 </td>
                                 <td>
                                     <% for(let j=0;j<reports[i].work.length;j++) { %>
