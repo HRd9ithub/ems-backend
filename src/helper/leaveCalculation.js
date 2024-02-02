@@ -5,12 +5,13 @@ const moment = require("moment");
 
 const offDay = ["Saturday", "Sunday"]
 
-const leaveCalculation = async (userId,type) => {
+exports.leaveCalculation = async (userId, type,date) => {
     const identify = true;
     let total = 0;
+    const joiningDate = moment(date);
+    const futureDate = joiningDate.add(3, 'months');
     // Start of the current year
-    const startOfYear = moment().clone().startOf('year').format('YYYY-MM-DD');
-
+    const startOfYear = futureDate.format('YYYY-MM-DD');
     // End of the current year
     const endOfYear = moment().clone().endOf('year').format('YYYY-MM-DD');
 
@@ -23,7 +24,7 @@ const leaveCalculation = async (userId,type) => {
                     { "from_date": { $gte: startOfYear } },
                     { "to_date": { $lte: endOfYear } },
                 ],
-                deleteAt: {$exists: false}
+                deleteAt: { $exists: false }
             }
         },
         {
@@ -84,7 +85,17 @@ const leaveCalculation = async (userId,type) => {
         }
     })
 
-   return total
+    return total
 }
 
-module.exports = leaveCalculation
+exports.checkJoiningDate = (joining_date) => {
+    // Assuming currentDate is the current date and dateToCheck is the date you want to check
+    const currentDate = moment();
+    const dateToCheck = moment(joining_date); // Replace this with your desired date
+
+    // Calculate the difference in months
+    const monthsDiff = currentDate.diff(dateToCheck, 'months');
+
+    return monthsDiff;
+}
+
