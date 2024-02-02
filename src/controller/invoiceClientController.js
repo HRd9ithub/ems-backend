@@ -75,12 +75,12 @@ const updateInvoiceClient = async (req, res) => {
 // name list 
 const getClientName = async(req,res) => {
     try {
-        const response = await invoice_client.find({userId : req.user._id},{first_name : 1, last_name : 1});
+        const response = await invoice_client.find({userId : req.user._id},{business_name : 1});
 
         return res.status(200).json({
             message : "success",
             success : true,
-            data : response.map((val) => ({name : val.first_name.concat(" ",val.last_name), _id : val._id})),
+            data : response.map((val) => ({name : val.business_name, _id : val._id})),
             permissions: req.permissions
         })
         

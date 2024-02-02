@@ -209,14 +209,16 @@ const getSingleData = async (id) => {
             invoiceClient: val.invoiceClient.map((elem) => {
                 return {
                     ...elem,
-                    "first_name": decryptData(elem.first_name),
-                    "last_name": decryptData(elem.last_name),
+                    "business_name": decryptData(elem.business_name),
+                    "client_industry": decryptData(elem.client_industry),
                     "phone": decryptData(elem.phone),
                     "country": decryptData(elem.country),
                     "state": decryptData(elem.state),
                     "city": decryptData(elem.city),
                     "postcode": decryptData(elem.postcode),
                     "address": decryptData(elem.address),
+                    "GSTIN" : decryptData(elem.GSTIN),
+                    "pan_number" : decryptData(elem.pan_number)
                 }
             }),
             bankDetails: val.bankDetails.map((elem) => {
@@ -322,8 +324,7 @@ const getInvoice = async (req, res) => {
                     currencyValue: 1,
                     deleteAt: 1,
                     gstType: 1,
-                    "invoiceClient.first_name": 1,
-                    "invoiceClient.last_name": 1
+                    "invoiceClient.business_name": 1
                 }
             }
         ])
@@ -331,7 +332,7 @@ const getInvoice = async (req, res) => {
         const decryptResult = result.map((val) => {
             return {
                 ...val,
-                invoiceClient: { "name": decryptData(val.invoiceClient?.first_name)?.concat(" ", decryptData(val.invoiceClient?.last_name)) }
+                invoiceClient: { "name": decryptData(val.invoiceClient?.business_name) }
             }
         })
         return res.status(200).json({

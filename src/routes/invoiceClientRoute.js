@@ -8,9 +8,11 @@ const { clientPermission } = require("../middlewares/permission");
 
 const router = Router();
 
+// Regular expression for GSTIN validation
+const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
+
 const formValidation = [
-    check('first_name', "First name field is required.").notEmpty(),
-    check('last_name', "Last name field is required.").notEmpty(),
+    check('business_name', "Business Name is a required field.").notEmpty(),
     check("email", "Email must be a valid email.").isEmail().custom(async (email, { req }) => {
         const data = await invoice_client.findOne({ email: { $regex: new RegExp('^' + req.body.email, 'i') } })
         
@@ -22,7 +24,7 @@ const formValidation = [
     check('state', "State field is required.").notEmpty(),
     check('city', "City field is required.").notEmpty(),
     check('postcode', "Postcode field is required.").notEmpty(),
-    check('address', "Address field is required.").notEmpty(),
+    check('address', "Address field is required.").notEmpty()
 ]
 
 // add route

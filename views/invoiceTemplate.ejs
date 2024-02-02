@@ -108,26 +108,28 @@
                             <%= issue_date %>
                         </td>
                     </tr>
-                    <% if (due_date) { %>
-                        <tr>
-                            <td>Due Date</td>
-                            <td>
-                                <%= due_date %>
-                            </td>
-                        </tr>
-                        <% } %>
-                            <% if (result.hasOwnProperty("extra_field")) { %>
-                                <% JSON.parse(result.extra_field).map((val, ind)=> { %>
-                                    <tr>
-                                        <td>
-                                            <%= val.name %>
-                                        </td>
-                                        <td>
-                                            <%= val.value %>
-                                        </td>
-                                    </tr>
-                                    <% }); %>
-                                        <% } %>
+                    <tr>
+                        <td>Due Date</td>
+                        <td>
+                            <% if (due_date) { %>
+                            <%= due_date %>
+                            <% } else { %>
+                                Not Set
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% if (result.hasOwnProperty("extra_field")) { %>
+                        <% JSON.parse(result.extra_field).map((val, ind)=> { %>
+                            <tr>
+                                <td>
+                                    <%= val.name %>
+                                </td>
+                                <td>
+                                    <%= val.value %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } %>
                 </table>
             </td>
             <td>
@@ -152,11 +154,20 @@
             <td style="padding: 25px 0 0 15px; width: 50%; " height="200">
                 <div class="bill-by-to-section">
                     <h3>Billed To</h3>
-                    <h4><%= invoiceClient.first_name?.concat(" ",invoiceClient.last_name) %></h4>
+                    <h4><%= invoiceClient.business_name %></h4>
+                    <% if(invoiceClient.client_industry) { %> 
+                        <p><%= invoiceClient.client_industry %></p>
+                    <% } %>
                     <p><%= invoiceClient.phone %></p>
                     <p><%= invoiceClient.email%></p>
                     <% if (invoiceClient.address) { %>
                         <p><%= invoiceClient.address?.concat(" ", invoiceClient.state).concat(",", invoiceClient.city).concat("-", invoiceClient.postcode) %></p>
+                    <% } %>
+                    <% if(invoiceClient.GSTIN) { %> 
+                        <p>GSTIN: <%= invoiceClient.GSTIN %></p>
+                    <% } %>
+                    <% if(invoiceClient.pan_number) { %> 
+                        <p>PAN: <%= invoiceClient.pan_number %></p>
                     <% } %>
                 </div>
             </td>
