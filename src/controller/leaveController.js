@@ -13,9 +13,9 @@ const path = require("path");
 const fs = require("fs");
 const ejs = require("ejs");
 const getAdminEmail = require("../helper/getAdminEmail");
-const leaveCalculation = require("../helper/leaveCalculation");
 const leave_setting = require("../models/leaveSettingSchema");
 const Attendance_Regulation = require("../models/attendanceRegulationSchema");
+const { checkJoiningDate, leaveCalculation } = require("../helper/leaveCalculation");
 
 // add leave
 const addLeave = async (req, res) => {
@@ -193,9 +193,12 @@ const getLeave = async (req, res) => {
                 }
             }
         })
+        // Calculate the difference in months
+        const monthsDiff = checkJoiningDate(req.user.joining_date);
 
         let calData = [];
-        if (identify) {
+        // Check if the difference is greater than or equal to 3
+        if (req.permissions.name.toLowerCase() !== "admin" && monthsDiff >= 3) {
             const leaveSettingData = await leave_setting.aggregate([
                 {
                     $lookup: {
@@ -215,7 +218,7 @@ const getLeave = async (req, res) => {
             ])
 
             calData = Promise.all(leaveSettingData.map(async (val) => {
-                let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId);
+                let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId, req.user.joining_date);
                 return { remaining: val.totalLeave - cal, type: val.leavetype, totalLeave: val.totalLeave }
             }))
         }
@@ -622,9 +625,9 @@ const deleteLeave = async (req, res) => {
         const roleData = await role.findOne({ _id: req.user.role_id });
         let { id } = req.params;
         let deletedUser = ""
-        if(roleData.name.toLowerCase() !== "admin"){
+        if (roleData.name.toLowerCase() !== "admin") {
             deletedUser = await Leave.findByIdAndUpdate({ _id: id }, { deleteAt: new Date(), isNotificationStatus: true, isNotification: true });
-        }else{
+        } else {
             deletedUser = await Leave.findByIdAndUpdate({ _id: id }, { deleteAt: new Date() });
         }
 
@@ -651,7 +654,7 @@ const deleteLeave = async (req, res) => {
             const content = ejs.render(htmlstring, {
                 name,
                 date: deletedUser.duration == 1 || deletedUser.duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-                day: deletedUser.duration ,
+                day: deletedUser.duration,
                 status: deletedUser.status,
                 reason: deletedUser.reason
             });
