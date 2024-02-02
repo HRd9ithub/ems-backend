@@ -11,14 +11,13 @@ mongoose.set('toJSON', { getters: true });
 
 
 const invoiceClientSchema = new Schema({
-    first_name: {
+    business_name: {
         type: String,
         required: true,
         get: invoiceDataDecrypt
     },
-    last_name: {
+    client_industry: {
         type: String,
-        required: true,
         get: invoiceDataDecrypt
     },
     profile_image: {
@@ -59,6 +58,14 @@ const invoiceClientSchema = new Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref : user
+    },
+    GSTIN: {
+        type: String,
+        get: invoiceDataDecrypt
+    },
+    pan_number: {
+        type: String,
+        get: invoiceDataDecrypt
     },
     deleteAt: {
         type: Date,
