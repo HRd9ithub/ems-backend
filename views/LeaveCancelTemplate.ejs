@@ -1,0 +1,74 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
+  <title></title>
+  <link href="https://fonts.googleapis.com/css2?family=Philosopher&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" align="center"
+    style="text-align: left;font-family: 'Philosopher', sans-serif;margin: 1.875rem auto;">
+    <tr>
+      <td width="100%" valign="top" bgcolor="#fff">
+        <table width="550" cellpadding="0" cellspacing="0" align="center"
+          style="padding:1rem 1.2rem; margin:0 auto; border: 1px solid lightgray;">
+          <tr>
+            <td style="text-align: center;">
+              <img src="https://i.postimg.cc/Hxc2kvrJ/d9-logo-black.png" style="height: 4rem;padding: .625rem 0;">
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">
+                <h2 style="margin-top: 0px">Leave Cancellation Notification</h2>
+            </td>
+          </tr>
+          <tr style="width: 100%; text-align:justify;">
+            <table style="width: 100%;">
+              <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                <td style="padding: .625rem;">
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500;text-align:justify;">
+                      <strong>
+                        I hope this email finds you well. I am writing to inform you that the leave requested by <%= name %> has been successfully cancelled.
+                      </strong>
+                  </p>
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500; margin-bottom: 0;">
+                      <strong>Leave Cancelled Details:</strong>
+                  </p>
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500; margin-bottom: 0;">
+                    <strong>Date: </strong> <%= date %>
+                  </p>
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500; margin-bottom: 0;">
+                    <strong>Day: </strong> <%= day %>
+                  </p>
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500; margin-bottom: 0;">
+                    <strong>Reason: </strong> <%= reason %>
+                  </p>
+                  <p style="color: #000000;font-size: .9375rem;font-weight: 500; margin-bottom: 0;">
+                    <strong>Status: </strong> <%= status %>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="border-top:1px solid #e5e5e5"></td>
+              </tr>
+              <tr style="font-size: 1rem;padding-left: 1.25rem;font-weight: 600;">
+                <td style="padding: .625rem 0 0;">
+                    <p style="text-align: center;color: #000000;font-size: .9375rem;font-weight: 500; margin: 0px">You have received this mandatory email service to review your employee request.</p>
+                </td>
+              </tr>
+            </table>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

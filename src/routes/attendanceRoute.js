@@ -18,7 +18,7 @@ const regulationValidation = [
     check("clockOut", "Clock out time is a required field.").notEmpty(),
     check("explanation", "Explanation is a required field.").notEmpty(),
     check("timestamp", "Timestamp is a required field.").notEmpty(),
-    check("userId", "User id is a required field.").isMongoId(),
+    check("id", "Id is a required field.").isMongoId()
 ]
 const commentValidation = [
     check("attendanceRegulationId", "attendanceRegulation id is a required field.").isMongoId(),

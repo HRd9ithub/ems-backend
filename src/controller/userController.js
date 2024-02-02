@@ -12,7 +12,7 @@ const createActivity = require("../helper/addActivity");
 const encryptData = require("../helper/encrptData");
 const decryptData = require("../helper/decryptData");
 const leave_setting = require("../models/leaveSettingSchema");
-const leaveCalculation = require("../helper/leaveCalculation");
+const { checkJoiningDate, leaveCalculation } = require("../helper/leaveCalculation");
 
 // create user function
 const createUser = async (req, res) => {
@@ -144,37 +144,37 @@ const activeUser = async (req, res) => {
                 profile_image: item.profile_image,
                 account_detail: item.account_detail.map((val) => {
                     return {
-                        _id : val._id,
-                        name : decryptData(val.name),
-                        bank_name : decryptData(val.bank_name),
-                        account_number : decryptData(val.account_number),
-                        ifsc_code : decryptData(val.ifsc_code),
-                        branch_name : decryptData(val.branch_name),
+                        _id: val._id,
+                        name: decryptData(val.name),
+                        bank_name: decryptData(val.bank_name),
+                        account_number: decryptData(val.account_number),
+                        ifsc_code: decryptData(val.ifsc_code),
+                        branch_name: decryptData(val.branch_name),
                     }
                 }),
                 emergency_contact: item.emergency_contact.map((val) => {
                     return {
-                        _id : val._id,
-                        name : decryptData(val.name),
-                        email : decryptData(val.email),
-                        phone : decryptData(val.phone),
-                        address : decryptData(val.address),
-                        relationship : decryptData(val.relationship),
+                        _id: val._id,
+                        name: decryptData(val.name),
+                        email: decryptData(val.email),
+                        phone: decryptData(val.phone),
+                        address: decryptData(val.address),
+                        relationship: decryptData(val.relationship),
                     }
                 }),
                 education: item.education.map((val) => {
                     return {
-                        _id : val._id,
-                        user_id : val.user_id,
-                        year : decryptData(val.year),
-                        percentage : decryptData(val.percentage),
-                        university_name : decryptData(val.university_name),
-                        degree : decryptData(val.degree),
+                        _id: val._id,
+                        user_id: val.user_id,
+                        year: decryptData(val.year),
+                        percentage: decryptData(val.percentage),
+                        university_name: decryptData(val.university_name),
+                        degree: decryptData(val.degree),
                     }
                 })
             }
         })
-        
+
         let userVerify = value.length !== 0 ? (value[0].account_detail.length === 0 || value[0].emergency_contact.length === 0) && req.permissions.name.toLowerCase() !== "admin" : false
 
         return res.status(200).json({ success: true, message: "User data fetch successfully.", data: result[0], userVerify: userVerify, permissions: req.permissions })
@@ -233,18 +233,20 @@ const getUser = async (req, res) => {
                     "email": 1,
                     "phone": 1,
                     "status": 1,
+                    "joining_date": 1
                 }
             }
         ]);
 
         const result = value.map((item) => {
             return {
-                _id : item._id,
-                name : decryptData(item.first_name).concat(" ", decryptData(item.last_name)),
+                _id: item._id,
+                name: decryptData(item.first_name).concat(" ", decryptData(item.last_name)),
                 employee_id: item.employee_id,
                 email: item.email,
                 phone: decryptData(item.phone),
-                status: item.status
+                status: item.status,
+                joining_date: item.joining_date
             }
         })
 
@@ -256,23 +258,25 @@ const getUser = async (req, res) => {
             },
             { $unwind: { path: "$leavetype", preserveNullAndEmptyArrays: true } },
             {
-                $project : {
+                $project: {
                     "leaveTypeId": 1,
                     "totalLeave": 1,
                     "createdAt": 1,
                     "updatedAt": 1,
-                    "leavetype":  { $first: "$leaveType.name" }
+                    "leavetype": { $first: "$leaveType.name" }
                 }
             }
         ])
 
-        const finalResult = Promise.all(result.map(async(elem) => {
-            const data= Promise.all(leaveSettingData.map(async (val) => {
-                let cal = await leaveCalculation(elem._id, val.leaveTypeId);
-                return { remaining: val.totalLeave - cal, type: val.leavetype,totalLeave : val.totalLeave, shortName: val.leavetype.slice(0,1) + "L"}
+        const finalResult = Promise.all(result.map(async (elem) => {
+            const data = Promise.all(leaveSettingData.map(async (val) => {
+                let cal = await leaveCalculation(elem._id, val.leaveTypeId, elem.joining_date);
+                return { remaining: val.totalLeave - cal, type: val.leavetype, totalLeave: val.totalLeave, shortName: val.leavetype.slice(0, 1) + "L" }
             }))
+            // Calculate the difference in months
+            const monthsDiff = checkJoiningDate(elem.joining_date);
             const leave = await data;
-            const final = {...elem , leave}
+            const final = { ...elem, leave, monthsDiff }
             return final
         }));
 
@@ -473,7 +477,7 @@ const changePassword = async (req, res) => {
 
         // password compare
         const isMatch = await bcrypt.compare(req.body.current_password, userData.password);
-        
+
         if (!isMatch) {
             return res.status(400).json({ error: ["Incorrect current password."], success: false })
         }
