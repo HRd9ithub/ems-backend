@@ -295,26 +295,21 @@ const getReport = async (req, res) => {
             }
         });
 
-        const halfleave = [];
-        const temp = result.map((val) => {
-            const entry = findResult.find((elem) => {
-                return elem.date === val.date
-            });
-            if(entry && entry.leave_for === "Half"){
-                halfleave.push(entry._id)
-               return {...val, leave_for: "Half Leave"}
-            }else{
-                return val
-            }
-        });
+        result.push(...findResult);
 
-        const removehlafleave = findResult.filter((val) => {
-            return !halfleave.includes(val._id)
+        let finalRecord =[] 
+        result.map((value) => {
+            const entry = findResult.find((elem) => {
+                return elem.date === value.date && elem.leave_for === "Half" && elem.userId.toString() == value.userId.toString()
+            });
+            if (!entry){
+                finalRecord.push(value);
+            }else if(entry && !value.name){
+                finalRecord.push({...value, leave_for: "Half Leave"});
+            }
         })
 
-        temp.push(...removehlafleave);
-
-        const record = temp.filter((val) => {
+        const record = finalRecord.filter((val) => {
             return new Date(val.date) <= new Date(endDate) && new Date(val.date) >= new Date(startDate)
         });
 
@@ -456,13 +451,13 @@ const generatorPdf = async (req, res) => {
             }
         });
 
-        const halfleave = [];
+        const halfleaveData = [];
         const filterData = reportData.map((val) => {
             const entry = findResult.find((elem) => {
                 return elem.date === val.date
             });
             if(entry && entry.leave_for === "Half"){
-                halfleave.push(entry._id)
+                halfleaveData.push(entry._id)
                return {...val, leave_for: "Half Leave"}
             }else{
                 return val
@@ -470,7 +465,7 @@ const generatorPdf = async (req, res) => {
         });
         
         const removehlafleave = findResult.filter((val) => {
-            return !halfleave.includes(val._id)
+            return !halfleaveData.includes(val._id)
         })
         filterData.push(...removehlafleave, ...holidayData);
 
@@ -525,19 +520,17 @@ const generatorPdf = async (req, res) => {
         const dayCount = uniqByKeepLast(finalRecord, it => it.date).length;
 
         const halfLeave = finalRecord.filter((cur) => {
-            return cur.leave_for && cur.leave_for === "Half"
+            return cur.leave_for && cur.leave_for === "Half Leave"
         })
         const fullLeave = finalRecord.filter((cur) => {
             return cur.leave_for && cur.leave_for === "Full"
         })
-        const LeaveCount = fullLeave.length + (halfLeave.length / 2);
 
         const totalHours = reportData.reduce((accumulator, currentValue) => {
             return (accumulator.totalHours ? Number(accumulator.totalHours) : Number(accumulator)) + Number(currentValue.totalHours)
         }, 0)
 
         const summary = {
-            LeaveCount,
             halfLeave: halfLeave.length,
             fullLeave: fullLeave.length,
             holidayCount,
