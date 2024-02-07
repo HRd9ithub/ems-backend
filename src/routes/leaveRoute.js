@@ -14,7 +14,7 @@ leaveRouter.post('/', Auth, leavePermission, [
     body('from_date', "Invalid From Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: 'YYYY-MM-DD' }),
     body('to_date', "Invalid To Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: 'YYYY-MM-DD' }),
     body('duration', "Duration field is Required.").notEmpty(),
-    body('leave_for', "Leave for field is Required.").isIn(['Full', 'Half']),
+    body('leave_for', "Invalid leave status. Please enter the leave status value for Full or First Half or Second Half.").isIn(['Full', 'First Half', 'Second Half']),
     body('reason', "Reason field is Required.").notEmpty(),
     body('status', "Status field is Required.").isIn(['Pending', 'Approved', "Declined"])
 ], addLeave)
@@ -28,7 +28,7 @@ leaveRouter.put('/:id', Auth, leavePermission, [
     body('from_date', "Invalid From Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: 'YYYY-MM-DD' }),
     body('to_date', "Invalid To Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: 'YYYY-MM-DD' }),
     body('duration', "Duration field is Required.").notEmpty(),
-    body('leave_for', "Leave for field is Required.").isIn(['Full', 'Half']),
+    body('leave_for', "Invalid leave status. Please enter the leave status value for Full or First Half or Second Half.").isIn(['Full', 'First Half', 'Second Half']),
     body('reason', "Reason field is Required.").notEmpty(),
     body('status', "Status field is Required.").isIn(['Pending', 'Approved', "Declined", "Read"])
 ], updateLeave)

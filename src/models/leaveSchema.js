@@ -24,7 +24,7 @@ const leaveSchema = new mongoose.Schema({
    leave_for: {
       type: String,
       require: true,
-      enum: ['Full', 'Half']
+      enum: ['Full', 'First Half', 'Second Half']
    },
    reason: {
       type: String,
