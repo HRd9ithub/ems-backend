@@ -109,7 +109,7 @@ const getAttendance = async (req, res) => {
     try {
         const { id, startDate, endDate } = req.query;
 
-        const identify = req.permissions?.name?.toLowerCase() !== "admin";
+        const identify = id || req.permissions.name.toLowerCase() !== "admin";
 
         const value = await attendance.aggregate([
             {
@@ -118,7 +118,7 @@ const getAttendance = async (req, res) => {
                         { timestamp: { $gte: new Date(startDate) } },
                         { timestamp: { $lte: new Date(endDate) } }
                     ],
-                    userId: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(req.user._id) }
+                    userId: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) }
                 }
             },
             {
