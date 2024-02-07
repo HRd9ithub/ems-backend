@@ -49,7 +49,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
         ])
 
         // leave request count
-        let leaveRequest = await Leave.aggregate([
+        const leaveRequest = await Leave.aggregate([
             {$match : {status : "Pending" ,deleteAt: {$exists: false}}},
             {
                 $lookup:
@@ -79,8 +79,8 @@ DashboardRoute.get('/', Auth, async (req, res) => {
             }
         ]);
 
-        // today absent list
-        let absentToday = await Leave.aggregate([{
+        // today absent full leave list
+        const FullLeaveToday = await Leave.aggregate([{
             $match: {
                 $expr: {
                     $and: [
@@ -89,6 +89,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                         { $gte: ["$to_date", moment(new Date()).format("YYYY-MM-DD")] },
                     ]
                 },
+                leave_for: {$nin : ["Half", "First Half", "Second Half"]},
                 deleteAt: {$exists: false}
             }
         },
@@ -120,11 +121,56 @@ DashboardRoute.get('/', Auth, async (req, res) => {
         },
         ])
 
+        // today absent half leave list
+        const HalfLeaveToday = await Leave.aggregate([{
+            $match: {
+                $expr: {
+                    $and: [
+                        { $eq: ["$status", "Approved"] },
+                        { $lte: ["$from_date", moment(new Date()).format("YYYY-MM-DD")] },
+                        { $gte: ["$to_date", moment(new Date()).format("YYYY-MM-DD")] },
+                    ]
+                },
+                leave_for: {$nin : ["Full"]},
+                deleteAt: {$exists: false}
+            }
+        },
+        {
+            $lookup: {
+                from: "users", localField: "user_id", foreignField: "_id", as: "user"
+            }
+        },
+        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+        {
+            $match: {
+                // "user.status": "Active",
+                "user.delete_at": { $exists: false },
+                "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                $or: [
+                    { "user.leaveing_date": { $eq: null } },
+                    { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                ]
+            }
+        },
+        {
+            $project: {
+                user_id: 1,
+                "user.employee_id": 1,
+                "user.first_name": 1,
+                "user.last_name": 1,
+                "user.profile_image": 1,
+                "leave_for":1
+            }
+        },
+        ])
+
+        const absentToday = [...HalfLeaveToday,...FullLeaveToday];
+
         // holiday list get
-        let holidayDay = await holiday.find();
+        const holidayDay = await holiday.find();
 
         // birthday list 
-        let birthDay = await user.find({
+        const birthDay = await user.find({
             status: "Active",
             delete_at: { $exists: false },
             date_of_birth: { $exists: true },
@@ -134,7 +180,9 @@ DashboardRoute.get('/', Auth, async (req, res) => {
         res.status(200).json({
             totalEmployee: value.length,
             leaveRequest: leaveRequest.length,
-            presentToday: value.length - absentToday.length,
+            presentToday: value.length - FullLeaveToday.length,
+            absentTodayCount: FullLeaveToday.length,
+            halfLeaveToday: HalfLeaveToday.length,
             absentToday : absentToday.map((val) => {
                 return {...val,
                     user: {

@@ -300,12 +300,12 @@ const getReport = async (req, res) => {
         let finalRecord =[] 
         result.map((value) => {
             const entry = findResult.find((elem) => {
-                return elem.date === value.date && elem.leave_for === "Half" && elem.userId.toString() == value.userId.toString()
+                return elem.date === value.date && (elem.leave_for === "Half" || elem.leave_for === "First Half" || elem.leave_for === "Second Half") && elem.userId.toString() == value.userId.toString()
             });
             if (!entry){
                 finalRecord.push(value);
             }else if(entry && !value.name){
-                finalRecord.push({...value, leave_for: "Half Leave"});
+                finalRecord.push({...value, leave_for: entry.leave_for + " Leave"});
             }
         })
 
@@ -456,9 +456,9 @@ const generatorPdf = async (req, res) => {
             const entry = findResult.find((elem) => {
                 return elem.date === val.date
             });
-            if(entry && entry.leave_for === "Half"){
+            if(entry && (entry.leave_for === "Half" || entry.leave_for === "Fisrt Half" || entry.leave_for === "Second Half")){
                 halfleaveData.push(entry._id)
-               return {...val, leave_for: "Half Leave"}
+               return {...val, leave_for: entry.leave_for + " Leave"}
             }else{
                 return val
             }
@@ -520,7 +520,7 @@ const generatorPdf = async (req, res) => {
         const dayCount = uniqByKeepLast(finalRecord, it => it.date).length;
 
         const halfLeave = finalRecord.filter((cur) => {
-            return cur.leave_for && cur.leave_for === "Half Leave"
+            return cur.leave_for && (cur.leave_for === "Half Leave" || cur.leave_for === "First Half Leave" || cur.leave_for === "Second Half Leave")
         })
         const fullLeave = finalRecord.filter((cur) => {
             return cur.leave_for && cur.leave_for === "Full"
