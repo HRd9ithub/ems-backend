@@ -1,16 +1,15 @@
 const { model, Schema, default: mongoose } = require("mongoose");
 const encryptData = require("../helper/encrptData");
 const decryptData = require("../helper/decryptData");
-const user = require("./userSchema");
 
-function invoiceDataDecrypt(data) {
-    return decryptData(data);
+function invoiceBusinessDataDecrypt(data) {
+    return data && decryptData(data);
 }
 
 mongoose.set('toJSON', { getters: true });
 
 
-const invoiceClientSchema = new Schema({
+const invoiceBusinessSchema = new Schema({
     profile_image: {
         type: String,
         default: "uploads/default.jpg"
@@ -18,53 +17,45 @@ const invoiceClientSchema = new Schema({
     business_name: {
         type: String,
         required: true,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
     address: {
         type: String,
         required: true,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
-    client_industry: {
+    GSTIN: {
         type: String,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
-    email: {
+    pan_number: {
         type: String,
-        get: invoiceDataDecrypt
-    },
-    phone: {
-        type: String,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
     country: {
         type: String,
         default: encryptData("India"),
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
     state: {
         type: String,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
     city: {
         type: String,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
     postcode: {
         type: String,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref : user
-    },
-    GSTIN: {
+    email: {
         type: String,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
-    pan_number: {
+    phone: {
         type: String,
-        get: invoiceDataDecrypt
+        get: invoiceBusinessDataDecrypt
     },
     deleteAt: {
         type: Date,
@@ -75,6 +66,6 @@ const invoiceClientSchema = new Schema({
     }, { toJSON: { getters: true }}
 );
 
-const invoice_client = new model("invoice_client", invoiceClientSchema);
+const invoice_business = new model("invoice_business", invoiceBusinessSchema);
 
-module.exports = invoice_client;
+module.exports = invoice_business;
