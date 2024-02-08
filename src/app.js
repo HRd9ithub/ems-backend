@@ -25,6 +25,7 @@ const passwordRoute = require('./routes/passwordRoute')
 const attendanceRoute = require('./routes/attendanceRoute');
 const userRoute = require("./routes/userRoute");
 const invoiceRoute = require("./routes/invoiceRoute");
+const invoiceBusinessRoute = require('./routes/invoiceBusinessRoute');
 const invoiceClientRoute = require('./routes/invoiceClientRoute');
 const invoiceAccountRoute = require('./routes/invoiceAccountRoute');
 const leaveSettingRoute = require('./routes/leaveSettingRoute');
@@ -80,6 +81,7 @@ app.use('/api/report_request', ReportRequestRoute)
 app.use('/api/activity', activityRoute)
 app.use('/api/password', passwordRoute);
 app.use('/api/attendance', attendanceRoute)
+app.use('/api/invoice/business', invoiceBusinessRoute)
 app.use('/api/invoice/client', invoiceClientRoute)
 app.use('/api/invoice/account', invoiceAccountRoute)
 app.use('/api/invoice', invoiceRoute)
