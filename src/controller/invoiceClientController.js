@@ -31,7 +31,8 @@ const createInvoiceClient = async (req, res) => {
                 result[key] = encryptData(result[key])
             }
         }
-        result.profile_image = req.file && "uploads/" + req.file.filename;
+        result.profile_image = req.file ? "uploads/" + req.file.filename : "uploads/default.jpg";
+
         result.userId = req.user._id
 
         const response = await invoice_client.create(result);
