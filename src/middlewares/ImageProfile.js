@@ -20,6 +20,6 @@ const upload = multer({
     }
 });
 
-const profile_image = upload.single("profile_image")
+const profile_image = upload.single("profile_image");
 
 module.exports = profile_image

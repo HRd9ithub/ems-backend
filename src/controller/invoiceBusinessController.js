@@ -31,7 +31,7 @@ exports.createBunsiness = async (req, res) => {
         }
 
         // image add for variable
-        result.profile_image = req.file && "uploads/" + req.file.filename;
+        result.profile_image = req.file ? "uploads/" + req.file.filename : "uploads/default.jpg";
 
         const response = await invoice_business.create(result);
 
