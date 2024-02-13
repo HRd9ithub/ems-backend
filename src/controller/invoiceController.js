@@ -23,7 +23,7 @@ const createInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field, terms, contact, clientId, userId, currencyValue, gstType, totalAmount, signImage, note, currency, status, tableData, newColumns, businessId, businessLogo } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field, terms, contact, clientId, userId, currencyValue, gstType, totalAmount, signImage, note, currency, status, tableData, newColumns, businessId, businessLogo, taxType, totalSubAmount } = req.body;
 
         await invoice_table.create({
             tableHead: JSON.parse(newColumns),
@@ -64,7 +64,9 @@ const createInvoice = async (req, res) => {
             terms: terms ? terms : [],
             gstType,
             businessId,
-            businessLogo: typeof (req.body.businessLogo) == 'string' ? businessLogo : businessLogo[0]
+            businessLogo: typeof (req.body.businessLogo) == 'string' ? businessLogo : businessLogo[0],
+            taxType,
+            totalSubAmount
         })
 
         return res.status(201).json({
@@ -95,7 +97,7 @@ const updateInvoice = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        let { invoiceId, issue_date, due_date, extra_field, terms, contact, clientId, userId, currencyValue, gstType, totalAmount, signImage, note, currency, status, tableData, newColumns, businessId, tableId, businessLogo } = req.body;
+        let { invoiceId, issue_date, due_date, extra_field, terms, contact, clientId, userId, currencyValue, gstType, totalAmount, signImage, note, currency, status, tableData, newColumns, businessId, tableId, businessLogo, taxType, totalSubAmount } = req.body;
 
         // table data update
         await invoice_table.findByIdAndUpdate({ _id: tableId }, {
@@ -145,7 +147,8 @@ const updateInvoice = async (req, res) => {
             terms: terms ? terms : [],
             gstType,
             businessId,
-            businessLogo: typeof (req.body.businessLogo) == 'string' ? businessLogo : businessLogo[0]
+            businessLogo: typeof (req.body.businessLogo) == 'string' ? businessLogo : businessLogo[0],
+            taxType, totalSubAmount
         })
 
         return res.status(200).json({
@@ -164,87 +167,181 @@ const updateInvoice = async (req, res) => {
 
 // get single data common
 
-const getSingleData = async (id) => {
-    const result = await invoice.aggregate([
-        {
-            $match: { _id: new mongoose.Types.ObjectId(id) }
-        },
-        {
-            $lookup: {
-                from: "invoice_clients", localField: "clientId", foreignField: "_id", as: "invoiceClient"
-            }
-        },
-        {
-            $lookup: {
-                from: "invoice_businesses", localField: "businessId", foreignField: "_id", as: "invoiceProvider"
-            }
-        },
-        {
-            $lookup: {
-                from: "invoice_accounts", localField: "_id", foreignField: "invoice_id", as: "bankDetails"
-            }
-        },
-        {
-            $lookup: {
-                from: "invoice_tables", localField: "invoiceId", foreignField: "invoiceId", as: "productDetails"
-            }
-        },
-        {
-            $project: {
-                "invoiceProvider.password": 0,
-                "invoiceProvider.token": 0,
-            }
-        }
-    ])
-
-    const decryptResult = result.map((val) => {
-        return {
-            ...val,
-            invoiceClient: val.invoiceClient.map((elem) => {
-                return {
-                    ...elem,
-                    "business_name": decryptData(elem.business_name),
-                    "client_industry": decryptData(elem.client_industry),
-                    "phone": decryptData(elem.phone),
-                    "email": decryptData(elem.email),
-                    "country": decryptData(elem.country),
-                    "state": decryptData(elem.state),
-                    "city": decryptData(elem.city),
-                    "postcode": decryptData(elem.postcode),
-                    "address": decryptData(elem.address),
-                    "GSTIN": decryptData(elem.GSTIN),
-                    "pan_number": decryptData(elem.pan_number)
+const getSingleData = async (id, userId) => {
+    if(id && id !== "undefined"){
+        const result = await invoice.aggregate([
+            {
+                $match: { 
+                    _id: new mongoose.Types.ObjectId(id)
                 }
-            }),
-            bankDetails: val.bankDetails.map((elem) => {
-                return {
-                    ...elem,
-                    "bank": decryptData(elem.bank),
-                    "account_number": decryptData(elem.account_number),
-                    "ifsc_code": decryptData(elem.ifsc_code),
-                    "branch_name": decryptData(elem.branch_name),
-                    "name": decryptData(elem.name),
+            },
+            {
+                $lookup: {
+                    from: "invoice_clients", localField: "clientId", foreignField: "_id", as: "invoiceClient"
                 }
-            }),
-            invoiceProvider: val.invoiceProvider.map((elem) => {
-                return {
-                    ...elem,
-                    "business_name": decryptData(elem.business_name),
-                    "phone": decryptData(elem.phone),
-                    "email": decryptData(elem.email),
-                    "country": decryptData(elem.country),
-                    "state": decryptData(elem.state),
-                    "city": decryptData(elem.city),
-                    "postcode": decryptData(elem.postcode),
-                    "address": decryptData(elem.address),
-                    "GSTIN": decryptData(elem.GSTIN),
-                    "pan_number": decryptData(elem.pan_number)
+            },
+            {
+                $lookup: {
+                    from: "invoice_businesses", localField: "businessId", foreignField: "_id", as: "invoiceProvider"
                 }
-            })
-        }
-    })
-
-    return decryptResult
+            },
+            {
+                $lookup: {
+                    from: "invoice_accounts", localField: "_id", foreignField: "invoice_id", as: "bankDetails"
+                }
+            },
+            {
+                $lookup: {
+                    from: "invoice_tables", localField: "invoiceId", foreignField: "invoiceId", as: "productDetails"
+                }
+            },
+            {
+                $project: {
+                    "invoiceProvider.password": 0,
+                    "invoiceProvider.token": 0,
+                }
+            }
+        ])
+    
+        const decryptResult = result.map((val) => {
+            return {
+                ...val,
+                invoiceClient: val.invoiceClient.map((elem) => {
+                    return {
+                        ...elem,
+                        "business_name": decryptData(elem.business_name),
+                        "client_industry": decryptData(elem.client_industry),
+                        "phone": decryptData(elem.phone),
+                        "email": decryptData(elem.email),
+                        "country": decryptData(elem.country),
+                        "state": decryptData(elem.state),
+                        "city": decryptData(elem.city),
+                        "postcode": decryptData(elem.postcode),
+                        "address": decryptData(elem.address),
+                        "GSTIN": decryptData(elem.GSTIN),
+                        "pan_number": decryptData(elem.pan_number)
+                    }
+                }),
+                bankDetails: val.bankDetails.map((elem) => {
+                    return {
+                        ...elem,
+                        "bank": decryptData(elem.bank),
+                        "account_number": decryptData(elem.account_number),
+                        "ifsc_code": decryptData(elem.ifsc_code),
+                        "branch_name": decryptData(elem.branch_name),
+                        "name": decryptData(elem.name),
+                    }
+                }),
+                invoiceProvider: val.invoiceProvider.map((elem) => {
+                    return {
+                        ...elem,
+                        "business_name": decryptData(elem.business_name),
+                        "phone": decryptData(elem.phone),
+                        "email": decryptData(elem.email),
+                        "country": decryptData(elem.country),
+                        "state": decryptData(elem.state),
+                        "city": decryptData(elem.city),
+                        "postcode": decryptData(elem.postcode),
+                        "address": decryptData(elem.address),
+                        "GSTIN": decryptData(elem.GSTIN),
+                        "pan_number": decryptData(elem.pan_number)
+                    }
+                })
+            }
+        })
+    
+        return decryptResult
+    }else{
+        const result = await invoice.aggregate([
+            {
+                $match: { 
+                    userId: new mongoose.Types.ObjectId(userId),
+                    deleteAt: {$exists: false}
+                }
+            },
+            {
+                $lookup: {
+                    from: "invoice_clients", localField: "clientId", foreignField: "_id", as: "invoiceClient"
+                }
+            },
+            {
+                $lookup: {
+                    from: "invoice_businesses", localField: "businessId", foreignField: "_id", as: "invoiceProvider"
+                }
+            },
+            {
+                $lookup: {
+                    from: "invoice_accounts", localField: "_id", foreignField: "invoice_id", as: "bankDetails"
+                }
+            },
+            {
+                $lookup: {
+                    from: "invoice_tables", localField: "invoiceId", foreignField: "invoiceId", as: "productDetails"
+                }
+            },
+            {
+                $sort: { "_id": -1 } // Sorting the matched documents based on a timestamp field
+            },
+            {
+                $limit: 1
+            },
+            {
+                $project: {
+                    "invoiceProvider.password": 0,
+                    "invoiceProvider.token": 0,
+                }
+            }
+        ])
+    
+        const decryptResult = result.map((val) => {
+            return {
+                ...val,
+                invoiceClient: val.invoiceClient.map((elem) => {
+                    return {
+                        ...elem,
+                        "business_name": decryptData(elem.business_name),
+                        "client_industry": decryptData(elem.client_industry),
+                        "phone": decryptData(elem.phone),
+                        "email": decryptData(elem.email),
+                        "country": decryptData(elem.country),
+                        "state": decryptData(elem.state),
+                        "city": decryptData(elem.city),
+                        "postcode": decryptData(elem.postcode),
+                        "address": decryptData(elem.address),
+                        "GSTIN": decryptData(elem.GSTIN),
+                        "pan_number": decryptData(elem.pan_number)
+                    }
+                }),
+                bankDetails: val.bankDetails.map((elem) => {
+                    return {
+                        ...elem,
+                        "bank": decryptData(elem.bank),
+                        "account_number": decryptData(elem.account_number),
+                        "ifsc_code": decryptData(elem.ifsc_code),
+                        "branch_name": decryptData(elem.branch_name),
+                        "name": decryptData(elem.name),
+                    }
+                }),
+                invoiceProvider: val.invoiceProvider.map((elem) => {
+                    return {
+                        ...elem,
+                        "business_name": decryptData(elem.business_name),
+                        "phone": decryptData(elem.phone),
+                        "email": decryptData(elem.email),
+                        "country": decryptData(elem.country),
+                        "state": decryptData(elem.state),
+                        "city": decryptData(elem.city),
+                        "postcode": decryptData(elem.postcode),
+                        "address": decryptData(elem.address),
+                        "GSTIN": decryptData(elem.GSTIN),
+                        "pan_number": decryptData(elem.pan_number)
+                    }
+                })
+            }
+        })
+    
+        return decryptResult
+    }
 }
 
 // single data get
@@ -252,7 +349,7 @@ const getSingleInvoice = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const result = await getSingleData(id);
+        const result = await getSingleData(id, req.user._id);
 
         return res.status(200).json({
             message: "success",
@@ -320,6 +417,7 @@ const getInvoice = async (req, res) => {
                 $project: {
                     invoiceId: 1,
                     issue_date: 1,
+                    due_date: 1,
                     totalAmount: 1,
                     status: 1,
                     createdAt: 1,
@@ -328,7 +426,6 @@ const getInvoice = async (req, res) => {
                     currency: 1,
                     currencyValue: 1,
                     deleteAt: 1,
-                    gstType: 1,
                     "invoiceClient.business_name": 1
                 }
             }
@@ -462,13 +559,6 @@ const downloadInvoice = async (req, res) => {
         }
 
         const imagePath = path.resolve(__dirname, `../../public/document/${result[0].businessLogo}`);
-        
-        function calculateValue() {
-            const CGST = result[0].productDetails[0].tableBody.reduce((total, cur) =>  total + (result[0].gstType === "CGST & SGST" && parseFloat(cur.SGST)) , 0)
-            const SGST = result[0].productDetails[0].tableBody.reduce((total, cur) =>  total + (result[0].gstType === "CGST & SGST" && parseFloat(cur.SGST)) , 0)
-            const IGST = result[0].productDetails[0].tableBody.reduce((total, cur) =>  total + (result[0].gstType === "IGST" && parseFloat(cur.IGST)) , 0)
-            return parseFloat(result[0].totalAmount - CGST - SGST - IGST ).toFixed(2)
-        }
 
         const ejsData = {
             result: result[0],
@@ -479,8 +569,7 @@ const downloadInvoice = async (req, res) => {
             bankDetail,
             issue_date: moment(result[0].issue_date).format("DD MMM YYYY"),
             due_date: result[0].due_date && moment(result[0].due_date).format("DD MMM YYYY"),
-            businessLogo: result[0].businessLogo ? "data:image/png;base64,"+convertImageToBase64(imagePath) : "",
-            subTotal : calculateValue()
+            businessLogo: result[0].businessLogo ? "data:image/png;base64,"+convertImageToBase64(imagePath) : ""
         }
         // get file path
         const filepath = path.resolve(__dirname, "../../views/invoiceTemplate.ejs");

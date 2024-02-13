@@ -20,11 +20,13 @@ const formValidation = [
     check('clientId', "Client id is a required field.").isMongoId(),
     check('businessId', "Business id is a required field.").isMongoId(),
     check('userId', "User id is a required field.").isMongoId(),
+    check('totalSubAmount', "Total sub amount is a required field.").notEmpty(),
     check('totalAmount', "Total amount is a required field.").notEmpty(),
     check('tableData', "Item Name is a required field.").notEmpty(),
     check('newColumns', "Columns is a required field.").notEmpty(),
     check('currency', "Currency is a required field.").notEmpty(),
     check('currencyValue', "Currency Value is a required field.").notEmpty(),
+    check('taxType', "Tax type is a required field.").notEmpty(),
 ]
 
 // add route

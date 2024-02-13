@@ -41,6 +41,10 @@ const invoiceSchema = new Schema({
         type: String,
         required: true
     },
+    totalSubAmount: {
+        type: String,
+        required: true
+    },
     currency: {
         type: String,
         required: true
@@ -75,6 +79,10 @@ const invoiceSchema = new Schema({
     },
     gstType: {
         type: String
+    },
+    taxType: {
+        type: String,
+        require: true
     },
     status: {
         type: String,

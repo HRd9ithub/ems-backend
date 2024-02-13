@@ -272,12 +272,12 @@
                         <tbody>
                             <tr>
                                 <td>
-                                    <p className="text-left mb-0 noraml-font">Sub Total:</p>
+                                    <p className="text-left mb-0 noraml-font">Amount:</p>
                                 </td>
                                 <td>
                                     <p className="text-right mb-0 noraml-font">
                                         <%= result.currency?.slice(6) %> 
-                                        <%= subTotal %>
+                                        <%= parseFloat(result.totalSubAmount).toFixed(2) %>
                                     </p>
                                 </td>
                             </tr>
@@ -359,12 +359,14 @@
         <% if(result.hasOwnProperty("attchmentFile") && result.attchmentFile.length !== 0 || result.signImage) { %>
             <tr>
                 <td>
-                    <h3 style="margin: 18px 0 10px;">Attachment</h3>
-                    <ol style="margin: 0; padding-left: 20px;">
-                        <% result.attchmentFile.map((val, ind) => { %>
-                            <li  style="margin-bottom: 10px; line-height: 1.6;"><%= val %></li>
-                        <% }) %>
-                    </ol>
+                    <% if(result.hasOwnProperty("attchmentFile") && result.attchmentFile.length !== 0) { %>
+                        <h3 style="margin: 18px 0 10px;">Attachment</h3>
+                        <ol style="margin: 0; padding-left: 20px;">
+                            <% result.attchmentFile.map((val, ind) => { %>
+                                <li  style="margin-bottom: 10px; line-height: 1.6;"><%= val %></li>
+                            <% }) %>
+                        </ol>
+                    <% } %>
                 </td>
                 <td>
                     <% if(result.signImage) { %>
