@@ -52,47 +52,49 @@ const addLeave = async (req, res) => {
         })
 
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
-        // get email id for send mail
-        const maillist = await getAdminEmail();
 
-        // leave_type
-        const leave_type = await leaveType.findOne({ _id: leave_type_id });
-
-        // user name
-        const userName = await user.findOne({ _id: user_id || req.user._id }, { "first_name": 1, "last_name": 1 });
-        const name = userName.first_name.concat(" ", userName.last_name);
-        const convertFromDate = moment(from_date).format("DD MMM YYYY");
-        const convertToDate = moment(to_date).format("DD MMM YYYY");
-
-        let mailsubject = 'Leave Request';
-        // mail content
-        let url = `${process.env.RESET_PASSWORD_URL}/leaves`
-        // get file path
-        const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
-
-        // read file using fs module
-        const htmlstring = fs.readFileSync(filepath).toString();
-        // add data dynamic
-        const content = ejs.render(htmlstring, {
-            name,
-            leave_type: leave_type.name,
-            date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-            duration: duration < 1 ? leave_for + " day" : duration == 1 ? duration + " day" : duration + " days",
-            leave_for,
-            action_url: url,
-            isAdmin: true,
-            reason
-        });
-
-        await leaveEmail(res, mailsubject, maillist, content);
         let leaveRoute = new Leave({ user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status, isNotification: user_id ? false : true })
         let response = await leaveRoute.save();
 
 
         if (req.permissions.name.toLowerCase() !== "admin") {
+            // get email id for send mail
+            const maillist = await getAdminEmail();
+
+            // leave_type
+            const leave_type = await leaveType.findOne({ _id: leave_type_id });
+
+            // user name
+            const userName = await user.findOne({ _id: user_id || req.user._id }, { "first_name": 1, "last_name": 1 });
+            const name = userName.first_name.concat(" ", userName.last_name);
+            const convertFromDate = moment(from_date).format("DD MMM YYYY");
+            const convertToDate = moment(to_date).format("DD MMM YYYY");
+
+            let mailsubject = 'Leave Request';
+            // mail content
+            let url = `${process.env.RESET_PASSWORD_URL}/leaves`
+            // get file path
+            const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
+
+            // read file using fs module
+            const htmlstring = fs.readFileSync(filepath).toString();
+            // add data dynamic
+            const content = ejs.render(htmlstring, {
+                name,
+                leave_type: leave_type.name,
+                date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+                duration: duration < 1 ? leave_for + " day" : duration == 1 ? duration + " day" : duration + " days",
+                leave_for,
+                action_url: url,
+                isAdmin: true,
+                reason
+            });
+
+            await leaveEmail(res, mailsubject, maillist, content);
+
             createActivity(req.user._id, "Leave added by")
         }
-        res.status(201).json({ message: "Data added successfully.", success: true, checkData: checkData })
+        res.status(201).json({ message: "Data added successfully.", success: true })
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
@@ -201,6 +203,11 @@ const getLeave = async (req, res) => {
         if (req.permissions.name.toLowerCase() !== "admin" && monthsDiff >= 3) {
             const leaveSettingData = await leave_setting.aggregate([
                 {
+                    $match: {
+                        deleteAt: {$exists: false}
+                    }
+                },
+                {
                     $lookup: {
                         from: "leavetypes", localField: "leaveTypeId", foreignField: "_id", as: "leaveType"
                     }
@@ -209,6 +216,7 @@ const getLeave = async (req, res) => {
                 {
                     $project: {
                         "leaveTypeId": 1,
+                        "userId": 1,
                         "totalLeave": 1,
                         "createdAt": 1,
                         "updatedAt": 1,
@@ -217,7 +225,7 @@ const getLeave = async (req, res) => {
                 }
             ])
 
-            calData = Promise.all(leaveSettingData.map(async (val) => {
+            calData = Promise.all(leaveSettingData.filter((curElem) => req.user._id.toString() == curElem.userId.toString()).map(async (val) => {
                 let cal = await leaveCalculation(id || req.user._id, val.leaveTypeId, req.user.joining_date);
                 return { remaining: val.totalLeave - cal, type: val.leavetype, totalLeave: val.totalLeave }
             }))
@@ -281,46 +289,46 @@ const updateLeave = async (req, res) => {
 
         if (checkData.length !== 0) return res.status(400).json({ error: ["It appears that the date you selected for leave has already been used."], success: false })
 
-        // get email id for send mail
-        const maillist = await getAdminEmail();
-
-        // leave_type
-        const leave_type = await leaveType.findOne({ _id: leave_type_id });
-
-        // user name
-        const userName = await user.findOne({ _id: user_id || req.user._id }, { "first_name": 1, "last_name": 1 });
-        const name = userName.first_name.concat(" ", userName.last_name);
-        const convertFromDate = moment(from_date).format("DD MMM YYYY");
-        const convertToDate = moment(to_date).format("DD MMM YYYY");
-
-        let mailsubject = 'Leave Request';
-        // mail content
-        let url = `${process.env.RESET_PASSWORD_URL}/leaves`
-        // get file path
-        const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
-
-        // read file using fs module
-        const htmlstring = fs.readFileSync(filepath).toString();
-        // add data dynamic
-        const content = ejs.render(htmlstring, {
-            name,
-            leave_type: leave_type.name,
-            date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-            duration: duration < 1 ? leave_for + " day" : duration == 1 ? duration + " day" : duration + " days",
-            leave_for,
-            action_url: url,
-            isAdmin: true,
-            reason
-        });
-
-        await leaveEmail(res, mailsubject, maillist, content);
-
         const leave_detail = await Leave.findByIdAndUpdate({ _id: id }, {
             user_id: user_id || req.user._id, leave_type_id, from_date, to_date, leave_for, duration, reason, status
         }, { new: true })
 
         if (leave_detail) {
             if (req.permissions.name.toLowerCase() !== "admin") {
+                // get email id for send mail
+                const maillist = await getAdminEmail();
+
+                // leave_type
+                const leave_type = await leaveType.findOne({ _id: leave_type_id });
+
+                // user name
+                const userName = await user.findOne({ _id: user_id || req.user._id }, { "first_name": 1, "last_name": 1 });
+                const name = userName.first_name.concat(" ", userName.last_name);
+                const convertFromDate = moment(from_date).format("DD MMM YYYY");
+                const convertToDate = moment(to_date).format("DD MMM YYYY");
+
+                let mailsubject = 'Leave Request';
+                // mail content
+                let url = `${process.env.RESET_PASSWORD_URL}/leaves`
+                // get file path
+                const filepath = path.resolve(__dirname, "../../views/leaveTemplate.ejs");
+
+                // read file using fs module
+                const htmlstring = fs.readFileSync(filepath).toString();
+                // add data dynamic
+                const content = ejs.render(htmlstring, {
+                    name,
+                    leave_type: leave_type.name,
+                    date: duration == 1 || duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+                    duration: duration < 1 ? leave_for + " day" : duration == 1 ? duration + " day" : duration + " days",
+                    leave_for,
+                    action_url: url,
+                    isAdmin: true,
+                    reason
+                });
+
+                await leaveEmail(res, mailsubject, maillist, content);
+
                 createActivity(req.user._id, "Leave updated by")
             }
             return res.status(200).json({ message: "Data updated successfully.", success: true })
@@ -634,33 +642,34 @@ const deleteLeave = async (req, res) => {
         if (deletedUser) {
             if (roleData.name.toLowerCase() !== "admin") {
                 createActivity(req.user._id, "Leave deleted by");
+
+                // get email id for send mail
+                const maillist = await getAdminEmail();
+
+                // user name
+                const userName = await user.findOne({ _id: deletedUser.user_id }, { "first_name": 1, "last_name": 1 });
+                const name = userName.first_name.concat(" ", userName.last_name);
+                const convertFromDate = moment(deletedUser.from_date).format("DD MMM YYYY");
+                const convertToDate = moment(deletedUser.to_date).format("DD MMM YYYY");
+
+                let mailsubject = 'Leave Cancellation Notification';
+                // get file path
+                const filepath = path.resolve(__dirname, "../../views/LeaveCancelTemplate.ejs");
+
+                // read file using fs module
+                const htmlstring = fs.readFileSync(filepath).toString();
+                // add data dynamic
+                const content = ejs.render(htmlstring, {
+                    name,
+                    date: deletedUser.duration == 1 || deletedUser.duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
+                    day: deletedUser.duration,
+                    status: deletedUser.status,
+                    reason: deletedUser.reason
+                });
+
+                await leaveEmail(res, mailsubject, maillist, content);
+
             }
-            // get email id for send mail
-            const maillist = await getAdminEmail();
-
-            // user name
-            const userName = await user.findOne({ _id: deletedUser.user_id }, { "first_name": 1, "last_name": 1 });
-            const name = userName.first_name.concat(" ", userName.last_name);
-            const convertFromDate = moment(deletedUser.from_date).format("DD MMM YYYY");
-            const convertToDate = moment(deletedUser.to_date).format("DD MMM YYYY");
-
-            let mailsubject = 'Leave Cancellation Notification';
-            // get file path
-            const filepath = path.resolve(__dirname, "../../views/LeaveCancelTemplate.ejs");
-
-            // read file using fs module
-            const htmlstring = fs.readFileSync(filepath).toString();
-            // add data dynamic
-            const content = ejs.render(htmlstring, {
-                name,
-                date: deletedUser.duration == 1 || deletedUser.duration < 1 ? convertFromDate : convertFromDate.concat(" to ", convertToDate),
-                day: deletedUser.duration,
-                status: deletedUser.status,
-                reason: deletedUser.reason
-            });
-
-            await leaveEmail(res, mailsubject, maillist, content);
-
             return res.status(200).json({ success: true, message: "Data deleted successfully." });
         } else {
             return res.status(404).json({ success: false, message: "Record is not found." });

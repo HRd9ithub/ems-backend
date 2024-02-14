@@ -31,7 +31,8 @@ const uploadSingleImage = documentUpload.fields([
 const importDocument = documentUpload.single("image");
 
 const attchmentFile = documentUpload.fields([
-    { name: 'image' }
+    { name: 'image'},
+    { name: 'businessLogo', maxCount: 1}
 ])
 
 module.exports = { uploadSingleImage, importDocument,attchmentFile }

@@ -73,11 +73,11 @@ const menuData = [{
     "path": "/password",
     "icon": "fa-solid fa-gear"
 },
-{
-    "name": "Leave Setting",
-    "path": "/leave-setting",
-    "icon": "fa-solid fa-gear"
-},
+// {
+//     "name": "Leave Setting",
+//     "path": "/leave-setting",
+//     "icon": "fa-solid fa-gear"
+// },
 {
     "name": "Invoices",
     "path": "/invoice",

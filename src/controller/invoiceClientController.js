@@ -3,6 +3,14 @@ const encryptData = require("../helper/encrptData");
 const invoice_client = require("../models/invoiceClientSchema");
 const invoice = require("../models/invoiceSchema");
 
+function removeNull(obj) {
+    return Object.fromEntries(Object.entries(obj).filter(([_, value]) => value != ""));
+}
+
+function getNullValue(obj) {
+    return Object.fromEntries(Object.entries(obj).filter(([_, value]) => value == ""));
+}
+
 // add data
 const createInvoiceClient = async (req, res) => {
     try {
@@ -16,15 +24,18 @@ const createInvoiceClient = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        for (const key in req.body) {
-            if (key !== "email" && key !== "userId" && key !== "profile_image") {
-                req.body[key] = encryptData(req.body[key])
+        const result = removeNull(req.body);
+
+        for (const key in result) {
+            if (key !== "userId" && key !== "profile_image") {
+                result[key] = encryptData(result[key])
             }
         }
-        req.body.profile_image = req.file && "uploads/" + req.file.filename;
-        req.body.userId = req.user._id
+        result.profile_image = req.file ? "uploads/" + req.file.filename : "uploads/default.jpg";
 
-        const response = await invoice_client.create(req.body);
+        result.userId = req.user._id
+
+        const response = await invoice_client.create(result);
         return res.status(201).json({
             message: "Data added successfully.",
             success: true,
@@ -51,14 +62,17 @@ const updateInvoiceClient = async (req, res) => {
             return res.status(422).json({ error: err, success: false });
         }
 
-        for (const key in req.body) {
-            if (key !== "email" && key !== "userId" && key !== "profile_image") {
-                req.body[key] = encryptData(req.body[key])
+        const result = removeNull(req.body);
+        const nullValue = getNullValue(req.body);
+
+        for (const key in result) {
+            if (key !== "userId" && key !== "profile_image") {
+                result[key] = encryptData(result[key])
             }
         }
-        req.body.profile_image = req.file &&  "uploads/" + req.file.filename
+        result.profile_image = req.file &&  "uploads/" + req.file.filename
 
-        const response = await invoice_client.findByIdAndUpdate({_id: id},req.body);
+        const response = await invoice_client.findByIdAndUpdate({_id: id},{$set: result, $unset: nullValue});
         return res.status(200).json({
             message: "Data updated successfully.",
             success: true,
@@ -124,29 +138,6 @@ const getClient = async(req,res) => {
             permissions: req.permissions
         })
         
-    } catch (error) {
-        return res.status(500).json({
-            message : error.message || "Interner server error.",
-            success : false
-        })
-    }
-}
-
-const checkEmail = async(req,res) => {
-    try {
-        const data = await invoice_client.findOne({ email: { $regex: new RegExp('^' + req.body.email, 'i') } })
-        
-        if (data) {
-            return res.status(422).json({
-                error : "Email address already exists.",
-                success : false
-            })
-        }else{
-           return res.status(200).json({
-               message : "Email address not already exists.",
-               success : true
-           })
-       }
     } catch (error) {
         return res.status(500).json({
             message : error.message || "Interner server error.",
@@ -222,4 +213,4 @@ const restoreClient = async (req, res) => {
 }
 
 
-module.exports = { createInvoiceClient, getClientName, getSingleClient, updateInvoiceClient, checkEmail, getClient, DeleteClient, restoreClient };
+module.exports = { createInvoiceClient, getClientName, getSingleClient, updateInvoiceClient, getClient, DeleteClient, restoreClient };

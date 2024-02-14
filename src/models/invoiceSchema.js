@@ -1,10 +1,16 @@
 const { model, Schema } = require("mongoose");
+const invoice_business = require("./invoiceBusinessSchema");
+const invoice_client = require("./invoiceClientSchema");
+const user = require("./userSchema");
 
 const invoiceSchema = new Schema({
     invoiceId: {
         type: String,
         required: true,
         unique: true
+    },
+    businessLogo: {
+        type: String
     },
     issue_date: {
         type: Date,
@@ -16,15 +22,26 @@ const invoiceSchema = new Schema({
     extra_field: {
         type: String,
     },
+    businessId: {
+        type: Schema.Types.ObjectId,
+        required: true,
+        ref: invoice_business
+    },
     clientId: {
         type: Schema.Types.ObjectId,
-        ref: "invoice_client"
+        required: true,
+        ref: invoice_client
     },
     userId: {
         type: Schema.Types.ObjectId,
-        ref: "user"
+        required: true,
+        ref: user
     },
     totalAmount: {
+        type: String,
+        required: true
+    },
+    totalSubAmount: {
         type: String,
         required: true
     },
@@ -62,6 +79,10 @@ const invoiceSchema = new Schema({
     },
     gstType: {
         type: String
+    },
+    taxType: {
+        type: String,
+        require: true
     },
     status: {
         type: String,

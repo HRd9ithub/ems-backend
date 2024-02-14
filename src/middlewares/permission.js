@@ -340,25 +340,25 @@ const clientPermission = async (req, res, next) => {
 }
 
 // * ================== leave setting route check permission =========================
-const leaveSettingPermission = async (req, res, next) => {
-    try {
-        let permission = await getRoleData(req.user.role_id, "leave setting");
+// const leaveSettingPermission = async (req, res, next) => {
+//     try {
+//         let permission = await getRoleData(req.user.role_id, "leave setting");
 
-        req.permissions = permission;
+//         req.permissions = permission;
 
-        if (req.method === "GET" && req.baseUrl == "/api/leave-setting" || req.baseUrl == "/api/leave-setting/:id") {
-            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to list the leave setting Data. please contact admin.", success : false })
-        } else if (req.method === "POST") {
-            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to create a leave setting for the leave setting Data. please contact admin.", success : false })
-        } else if (req.method === "PUT") {
-            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to update a leave setting to the leave setting Data. please contact admin.", success : false })
-        } else if (req.method === "DELETE") {
-            permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to delete a leave setting from the leave setting Data. please contact admin.", success : false })
-        }
-    } catch (error) {
-        return res.status(500).json({ message: error.message, success : false })
-    }
-}
+//         if (req.method === "GET" && req.baseUrl == "/api/leave-setting" || req.baseUrl == "/api/leave-setting/:id") {
+//             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to list the leave setting Data. please contact admin.", success : false })
+//         } else if (req.method === "POST") {
+//             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to create a leave setting for the leave setting Data. please contact admin.", success : false })
+//         } else if (req.method === "PUT") {
+//             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to update a leave setting to the leave setting Data. please contact admin.", success : false })
+//         } else if (req.method === "DELETE") {
+//             permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to delete a leave setting from the leave setting Data. please contact admin.", success : false })
+//         }
+//     } catch (error) {
+//         return res.status(500).json({ message: error.message, success : false })
+//     }
+// }
 
 module.exports = { 
     userPermission,
@@ -375,5 +375,5 @@ module.exports = {
     leavePermission,
     leaveTypePermission,
     holidayPermission,
-    leaveSettingPermission
+    // leaveSettingPermission
 }
