@@ -252,6 +252,11 @@ const getUser = async (req, res) => {
 
         const leaveSettingData = await leave_setting.aggregate([
             {
+                $match: {
+                    deleteAt: {$exists: false}
+                }
+            },
+            {
                 $lookup: {
                     from: "leavetypes", localField: "leaveTypeId", foreignField: "_id", as: "leaveType"
                 }
@@ -260,6 +265,7 @@ const getUser = async (req, res) => {
             {
                 $project: {
                     "leaveTypeId": 1,
+                    "userId": 1,
                     "totalLeave": 1,
                     "createdAt": 1,
                     "updatedAt": 1,
@@ -269,7 +275,7 @@ const getUser = async (req, res) => {
         ])
 
         const finalResult = Promise.all(result.map(async (elem) => {
-            const data = Promise.all(leaveSettingData.map(async (val) => {
+            const data = Promise.all(leaveSettingData.filter((curElem) => elem._id.toString() == curElem.userId.toString()).map(async (val) => {
                 let cal = await leaveCalculation(elem._id, val.leaveTypeId, elem.joining_date);
                 return { remaining: val.totalLeave - cal, type: val.leavetype, totalLeave: val.totalLeave, shortName: val.leavetype.slice(0, 1) + "L" }
             }))
