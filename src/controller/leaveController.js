@@ -102,7 +102,7 @@ const addLeave = async (req, res) => {
 
 // get leave
 const getLeave = async (req, res) => {
-    let { id, startDate, endDate } = req.query;
+    let { id, startDate, endDate, status } = req.query;
     try {
         // date validation
         var a = moment(startDate, "YYYY-MM-DD");
@@ -124,7 +124,8 @@ const getLeave = async (req, res) => {
                         { from_date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
                         { to_date: { $lte: moment(endDate).format("YYYY-MM-DD") } }
                     ],
-                    deleteAt: { $exists: false }
+                    deleteAt: { $exists: false },
+                    status: status && status !== "null"? {$eq: status} : {$ne: []}
                 }
             },
             {
