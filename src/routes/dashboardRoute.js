@@ -50,7 +50,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
 
         // leave request count
         const leaveRequest = await Leave.aggregate([
-            {$match : {status : "Pending" ,deleteAt: {$exists: false}}},
+            { $match: { status: "Pending", deleteAt: { $exists: false } } },
             {
                 $lookup:
                 {
@@ -58,6 +58,13 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                     localField: "user_id",
                     foreignField: "_id",
                     as: "user"
+                }
+            },
+            {
+                $unwind:
+                {
+                    path: "$user",
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
@@ -70,14 +77,48 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                         { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
                     ]
                 }
-
+            },
+            {
+                $lookup:
+                {
+                    from: "leavetypes",
+                    localField: "leave_type_id",
+                    foreignField: "_id",
+                    as: "leaveType"
+                }
             },
             {
                 $project: {
-                    "_id": 1
+                    "user_id": 1,
+                    "leave_type_id": 1,
+                    "from_date": 1,
+                    "to_date": 1,
+                    "leave_for": 1,
+                    "duration": 1,
+                    "reason": 1,
+                    "status": 1,
+                    "createdAt": 1,
+                    "leaveType": { $first: "$leaveType.name" },
+                    "user.employee_id": 1,
+                    "user.profile_image": 1,
+                    "user.first_name": 1,
+                    "user.last_name": 1,
+                    "user.status": 1,
                 }
             }
         ]);
+
+        // data decrypt 
+        const leaveRequestData = leaveRequest.map((val) => {
+            return {
+                ...val,
+                user: {
+                    first_name: decryptData(val.user.first_name),
+                    last_name: decryptData(val.user.last_name),
+                    status: val.user.status,
+                }
+            }
+        })
 
         // today absent full leave list
         const FullLeaveToday = await Leave.aggregate([{
@@ -89,8 +130,8 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                         { $gte: ["$to_date", moment(new Date()).format("YYYY-MM-DD")] },
                     ]
                 },
-                leave_for: {$nin : ["Half", "First Half", "Second Half"]},
-                deleteAt: {$exists: false}
+                leave_for: { $nin: ["Half", "First Half", "Second Half"] },
+                deleteAt: { $exists: false }
             }
         },
         {
@@ -131,8 +172,8 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                         { $gte: ["$to_date", moment(new Date()).format("YYYY-MM-DD")] },
                     ]
                 },
-                leave_for: {$nin : ["Full"]},
-                deleteAt: {$exists: false}
+                leave_for: { $nin: ["Full"] },
+                deleteAt: { $exists: false }
             }
         },
         {
@@ -159,12 +200,12 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                 "user.first_name": 1,
                 "user.last_name": 1,
                 "user.profile_image": 1,
-                "leave_for":1
+                "leave_for": 1
             }
         },
         ])
 
-        const absentToday = [...HalfLeaveToday,...FullLeaveToday];
+        const absentToday = [...HalfLeaveToday, ...FullLeaveToday];
 
         // holiday list get
         const holidayDay = await holiday.find();
@@ -183,8 +224,9 @@ DashboardRoute.get('/', Auth, async (req, res) => {
             presentToday: value.length - FullLeaveToday.length,
             absentTodayCount: FullLeaveToday.length,
             halfLeaveToday: HalfLeaveToday.length,
-            absentToday : absentToday.map((val) => {
-                return {...val,
+            absentToday: absentToday.map((val) => {
+                return {
+                    ...val,
                     user: {
                         first_name: decryptData(val.user.first_name),
                         last_name: decryptData(val.user.last_name),
@@ -194,6 +236,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
             }),
             holidayDay,
             birthDay,
+            leaveRequestData,
             success: true
         })
 
