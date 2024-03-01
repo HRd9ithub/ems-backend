@@ -102,7 +102,7 @@ const addLeave = async (req, res) => {
 
 // get leave
 const getLeave = async (req, res) => {
-    let { id, startDate, endDate, status } = req.query;
+    let { id, startDate, endDate, status, leave_for } = req.query;
     try {
         // date validation
         var a = moment(startDate, "YYYY-MM-DD");
@@ -114,18 +114,37 @@ const getLeave = async (req, res) => {
 
         // check for id 
         let identify = id || req.permissions.name.toLowerCase() !== "admin";
+        let leave_for_status = "";
+        if(leave_for && leave_for !== "null"){
+            leave_for_status = leave_for === "Half" ? ["Second Half", "First Half"] : ["Full"]
+        }
 
         // get data for leave
         let leaveData = await Leave.aggregate([
             {
                 $match: {
                     user_id: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) },
-                    $and: [
-                        { from_date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
-                        { to_date: { $lte: moment(endDate).format("YYYY-MM-DD") } }
+                    // $and: [
+                    //     { from_date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                    //     { to_date: { $lte: moment(endDate).format("YYYY-MM-DD") } }
+                    // ],
+                    $or: [
+                        {
+                            $and: [
+                                { 'from_date': { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                                { 'from_date': { $lte: moment(endDate).format("YYYY-MM-DD") } },
+                            ]
+                        },
+                        {
+                            $and: [
+                                { 'to_date': { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                                { 'to_date': { $lte: moment(endDate).format("YYYY-MM-DD") } },
+                            ]
+                        }
                     ],
                     deleteAt: { $exists: false },
-                    status: status && status !== "null"? {$eq: status} : {$ne: []}
+                    status: status && status !== "null"? {$eq: status} : {$ne: []},
+                    leave_for: leave_for_status ? {$in: leave_for_status} : {$ne: []}
                 }
             },
             {
@@ -184,6 +203,7 @@ const getLeave = async (req, res) => {
                 }
             }
         ]);
+
 
         // data decrypt 
         let result = leaveData.map((val) => {
