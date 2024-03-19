@@ -10,8 +10,9 @@ exports.leaveCalculation = async (userId, type,date) => {
     let total = 0;
     const joiningDate = moment(date);
     const futureDate = joiningDate.add(3, 'months');
+    const leaveStartDate = futureDate.format("YYYY-MM-DD")
     // Start of the current year
-    const startOfYear = futureDate.format('YYYY-MM-DD');
+    const startOfYear = moment().clone().startOf('year').format('YYYY-MM-DD');
     // End of the current year
     const endOfYear = moment().clone().endOf('year').format('YYYY-MM-DD');
 
@@ -21,7 +22,7 @@ exports.leaveCalculation = async (userId, type,date) => {
                 user_id: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(userId) },
                 status: "Approved",
                 $and: [
-                    { "from_date": { $gte: startOfYear } },
+                    { "from_date": { $gte: leaveStartDate } },
                     { "to_date": { $lte: endOfYear } },
                 ],
                 deleteAt: { $exists: false }
