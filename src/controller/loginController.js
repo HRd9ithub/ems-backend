@@ -12,7 +12,6 @@ const sendOtpMail = require("../handler/otpEmail");
 const createActivity = require("../helper/addActivity");
 const account = require("../models/accountSchema");
 const emergency_contact = require("../models/emergencySchema");
-const decryptData = require("../helper/decryptData");
 
 // user login function
 const userLogin = async (req, res) => {
@@ -31,11 +30,11 @@ const userLogin = async (req, res) => {
         if (userData) {
             // password compare
             let isMatch = await userData.comparePassword(req.body.password);
-
+            
             if (isMatch) {
-
-                if (decryptData(userData.status) !== 'Inactive' && !userData.delete_at && (!userData.leaveing_date || moment(userData.leaveing_date).format("YYYY-MM-DD") > moment(new Date()).format("YYYY-MM-DD"))) {
-
+                
+                if (userData.status !== 'Inactive' && !userData.delete_at && (!userData.leaveing_date || moment(userData.leaveing_date).format("YYYY-MM-DD") > moment(new Date()).format("YYYY-MM-DD"))) {
+                    
                     let mailsubject = 'Verification Code';
 
                     let otp = otpGenerator.generate(4, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
@@ -49,7 +48,7 @@ const userLogin = async (req, res) => {
                     }
 
                 } else {
-                    if (userData && decryptData(userData.status) === 'Inactive' && !userData.delete_at) {
+                    if (userData && userData.status === 'Inactive' && !userData.delete_at) {
                         return res.status(400).json({ message: "Your account is inactive; please contact your administrator.", success: false })
                     } else {
                         // email not match send message

@@ -4,7 +4,7 @@ const ejs = require('ejs');
 const fs = require('fs');
 const { SMTP_EMAIL, SMTP_PASSWORD } = process.env
 
-const forgetEmail = async (res,email, mailsubject, url) => {
+const forgetEmail = async (res, email, mailsubject, url) => {
     try {
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
@@ -12,6 +12,9 @@ const forgetEmail = async (res,email, mailsubject, url) => {
             auth: {
                 user: SMTP_EMAIL,
                 pass: SMTP_PASSWORD
+            },
+            tls: {
+                rejectUnauthorized: false
             }
         })
 
@@ -21,7 +24,7 @@ const forgetEmail = async (res,email, mailsubject, url) => {
         // read file using fs module
         let htmlstring = fs.readFileSync(filepath).toString();
         // add data dynamic
-        let content = ejs.render(htmlstring, {action_url: url });
+        let content = ejs.render(htmlstring, { action_url: url });
 
         let from = `D9ithub <${SMTP_EMAIL}>`
         const mailOptions = {
