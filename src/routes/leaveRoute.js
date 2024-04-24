@@ -2,8 +2,8 @@ const { Router } = require('express');
 const leaveRouter = Router();
 const Auth = require('../middlewares/authtication');
 const { body } = require('express-validator');
-const { addLeave, getLeave, singleGetLeave, updateLeave, changeStatus, getNotifications, deleteLeave, notificationDelete } = require('../controller/leaveController');
-const { leavePermission } = require('../middlewares/permission');
+const { addLeave, getLeave, singleGetLeave, updateLeave, changeStatus, getNotifications, deleteLeave, notificationDelete, getAllNotifications } = require('../controller/leaveController');
+const { leavePermission, notificationPermission } = require('../middlewares/permission');
 
 // Get all leave
 leaveRouter.get('/', Auth, leavePermission, getLeave)
@@ -39,7 +39,8 @@ leaveRouter.patch('/:id', Auth, leavePermission, [body('status', "Status field i
 // all record status
 leaveRouter.post('/status', Auth, leavePermission, notificationDelete)
 
-leaveRouter.post('/notification', Auth, getNotifications)
+leaveRouter.post('/notification', Auth, getNotifications);
+leaveRouter.post('/notification/all', Auth, notificationPermission, getAllNotifications);
 
 leaveRouter.delete('/:id', Auth, deleteLeave);
 
