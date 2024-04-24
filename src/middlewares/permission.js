@@ -145,6 +145,19 @@ const leavePermission = async (req, res, next) => {
         return res.status(500).json({ message: error.message })
     }
 }
+const notificationPermission = async (req, res, next) => {
+    try {
+        let permission = await getRoleData(req.user.role_id, "notification");
+
+        req.permissions = permission;
+
+        if (req.method === "POST" && req.route.path == "/notification/all") {
+            permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing notification to the notification Data. please contact admin." })
+        }
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
 
 // * ================== holiday route check permission ===========================
 const holidayPermission = async (req, res, next) => {
@@ -375,5 +388,5 @@ module.exports = {
     leavePermission,
     leaveTypePermission,
     holidayPermission,
-    // leaveSettingPermission
+    notificationPermission
 }
