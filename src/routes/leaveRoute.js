@@ -39,7 +39,7 @@ leaveRouter.patch('/:id', Auth, leavePermission, [body('status', "Status field i
 // all record status
 leaveRouter.post('/status', Auth, leavePermission, notificationDelete)
 
-leaveRouter.post('/notification', Auth, getNotifications)
+leaveRouter.post('/notification', Auth, getNotifications);
 leaveRouter.post('/notification/all', Auth, notificationPermission, getAllNotifications);
 
 leaveRouter.delete('/:id', Auth, deleteLeave);
