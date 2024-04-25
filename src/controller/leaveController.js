@@ -700,4 +700,210 @@ const deleteLeave = async (req, res) => {
     }
 }
 
-module.exports = { addLeave, getLeave, singleGetLeave, updateLeave, deleteLeave, changeStatus, notificationDelete, getNotifications }
+const getAllNotifications = async (req, res) => {
+    try {
+        let leaveData = await Leave.aggregate([
+            {
+                $lookup:
+                {
+                    from: "users",
+                    localField: "user_id",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $match: {
+                    // "user.status": "Active",
+                    "user.delete_at": { $exists: false },
+                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { "user.leaveing_date": { $eq: null } },
+                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+
+            },
+            {
+                $lookup:
+                {
+                    from: "leavetypes",
+                    localField: "leave_type_id",
+                    foreignField: "_id",
+                    as: "leaveType"
+                }
+            },
+            {
+                $unwind:
+                {
+                    path: "$user",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    "user_id": 1,
+                    "leave_type_id": 1,
+                    "createdAt": 1,
+                    "from_date": 1,
+                    "to_date": 1,
+                    "leave_for": 1,
+                    "duration": 1,
+                    "reason": 1,
+                    "status": 1,
+                    "isNotificationStatus": 1,
+                    deleteAt: 1,
+                    "leaveType": { $first: "$leaveType.name" },
+                    "user.employee_id": 1,
+                    "user.profile_image": 1,
+                    "user.first_name": 1,
+                    "user.last_name": 1,
+                    "user.status": 1,
+                    leaveCancel: 1
+                }
+            }
+        ])
+        let result = await ReportRequestSchema.aggregate([
+            {
+                $match: {
+                    status: {
+                        $in:  ['Pending', "Read"]
+                    }
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work'
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    _id: {
+                        userId: '$userId',
+                        createdAt: '$createdAt',
+                        updatedAt: '$updatedAt',
+                        totalHours: '$totalHours',
+                        date: '$date',
+                        title: '$title',
+                        status: '$status',
+                        wortReportId: '$wortReportId',
+                        _id: '$_id',
+
+                    },
+                    work: {
+                        $push: '$work'
+                    }
+                }
+            }, {
+                $lookup: {
+                    from: "users", localField: "_id.userId", foreignField: "_id", as: "user"
+                }
+            },
+            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+            {
+                $match: {
+                    // "user.status": "Active",
+                    "user.delete_at": { $exists: false },
+                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { "user.leaveing_date": { $eq: null } },
+                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+            },
+            {
+                $project: {
+                    userId: "$_id.userId",
+                    totalHours: "$_id.totalHours",
+                    date: "$_id.date",
+                    work: 1,
+                    title: "$_id.title",
+                    status: "$_id.status",
+                    wortReportId: "$_id.wortReportId",
+                    updatedAt: "$_id.updatedAt",
+                    createdAt: "$_id.createdAt",
+                    _id: "$_id._id",
+                    "user.employee_id": 1,
+                    "user.profile_image": 1,
+                    "user.first_name": 1,
+                    "user.status": 1,
+                    "user.last_name": 1
+                }
+            }
+        ])
+        const data = await Attendance_Regulation.aggregate([
+            {
+                $match: {
+                    status: {
+                        $in:  ['Pending', "Read"]
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$user",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    userId: 1,
+                    clock_in: 1,
+                    attendanceId: 1,
+                    clock_out: 1,
+                    explanation: 1,
+                    status: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    "user.first_name": 1,
+                    "user.last_name": 1,
+                    "user.profile_image": 1,
+                }
+            }
+        ]);
+
+        const totalNotification = result.concat(leaveData, data);
+
+        const notification = totalNotification.sort((a, b) => {
+            return new Date(b.createdAt) - new Date(a.createdAt)
+        })
+
+        const finalData = notification.map((val) => {
+            return {
+                ...val,
+                user: {
+                    first_name: decryptData(val.user.first_name),
+                    last_name: decryptData(val.user.last_name),
+                    status: val.user.status,
+                    profile_image: val.user.profile_image,
+                }
+            }
+        })
+        return res.status(200).json({ message: "Notification data fetch successfully.",permissions: req.permissions , success: true, notification: finalData })
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+    }
+}
+
+module.exports = { addLeave, getLeave, singleGetLeave, updateLeave, deleteLeave, changeStatus, notificationDelete, getNotifications, getAllNotifications }

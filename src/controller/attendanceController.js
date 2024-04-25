@@ -265,7 +265,9 @@ const getAttendanceRegulation = async (req, res) => {
             {
                 $match: {
                     attendanceId: new mongoose.Types.ObjectId(id),
-                    deleteAt: { $exists: false }
+                    status: {
+                        $in:  ['Pending', "Read"]
+                    }
                 }
             },
             {
@@ -358,7 +360,7 @@ const addComment = async (req, res) => {
         const userData = await user.findOne({ _id: userId }, { email: 1 })
         await regulationMail(res, userData.email, contentData);
 
-        await Attendance_Regulation.updateMany({ attendanceId: attendanceRegulationId, deleteAt: {$exists: false} }, { $set: { comment, status, deleteAt: new Date() } })
+        await Attendance_Regulation.updateMany({ attendanceId: attendanceRegulationId }, { $set: { comment, status, deleteAt: new Date() } })
 
         return res.status(200).json({ message: "Data added successfully.", success: true })
     } catch (error) {
