@@ -11,8 +11,7 @@ const loginInfoSchema = new mongoose.Schema({
         required: true
     },
     city: {
-        type: String,
-        required: true
+        type: String
     },
     device: {
         type: String,
