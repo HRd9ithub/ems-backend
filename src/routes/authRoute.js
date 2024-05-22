@@ -12,7 +12,6 @@ AuthRoute.post('/login', [
 
 // otp verification api
 AuthRoute.patch('/otp', [expressValidator.body('email', "Email must be a valid email.").isEmail(),
-expressValidator.body("city", "city is a required field. ").notEmpty(),
 expressValidator.body("device", "device is a required field.").notEmpty(),
 expressValidator.body("browser_name", "browser name is required.").notEmpty(),
 expressValidator.body("ip", "ip is required.").notEmpty(),
