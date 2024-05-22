@@ -100,7 +100,7 @@ const verifyOtp = async (req, res) => {
             if ((role_detail.name).toLowerCase() !== "admin") {
                 const loginData = new loginInfo({
                     userId: data._id,
-                    city: req.body.city,
+                    city: req.body?.city,
                     device: req.body.device,
                     device_name: req.body.device_name,
                     ip: req.body.ip,
