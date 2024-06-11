@@ -27,7 +27,7 @@
     "nodemon": "^3.0.1",
     "otp-generator": "^4.0.1",
     "pdf-creator-node": "^2.3.5",
-    "puppeteer": "^21.6.1",
+    "puppeteer": "^21.11.0",
     "swagger-ui-express": "^5.0.0",
     "yamljs": "^0.3.0"
   }
