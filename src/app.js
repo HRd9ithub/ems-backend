@@ -29,6 +29,7 @@ const invoiceBusinessRoute = require('./routes/invoiceBusinessRoute');
 const invoiceClientRoute = require('./routes/invoiceClientRoute');
 const invoiceAccountRoute = require('./routes/invoiceAccountRoute');
 const leaveSettingRoute = require('./routes/leaveSettingRoute');
+const chatBotRoute = require('./routes/chatBotRoute');
 
 const sendBirthdayMail = require('./cron-job');
 // add database
@@ -85,7 +86,8 @@ app.use('/api/invoice/business', invoiceBusinessRoute)
 app.use('/api/invoice/client', invoiceClientRoute)
 app.use('/api/invoice/account', invoiceAccountRoute)
 app.use('/api/invoice', invoiceRoute)
-app.use('/api/leave-setting', leaveSettingRoute)
+app.use('/api/leave-setting', leaveSettingRoute);
+app.use('/api/geminiRoute', chatBotRoute);
 
 app.all("*", (req, res, next) => {
    let err = new Error(`Can't find ${req.originalUrl} on the server.`);
