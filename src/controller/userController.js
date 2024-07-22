@@ -187,6 +187,8 @@ const activeUser = async (req, res) => {
 // all user data fetch function
 const getUser = async (req, res) => {
     try {
+        const { status = "" } = req.query;
+
         const value = await user.aggregate([
             {
                 $match: {
@@ -194,7 +196,8 @@ const getUser = async (req, res) => {
                     $or: [
                         { "leaveing_date": { $eq: null } },
                         { "leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
-                    ]
+                    ],
+                    status: status ? { $eq: status } : { $ne: []}
                 }
             },
             {
