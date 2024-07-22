@@ -48,6 +48,41 @@ DashboardRoute.get('/', Auth, async (req, res) => {
             }
         ])
 
+        const inActiveEmployee = await user.aggregate([
+            {
+                $match: {
+                    status:{ $ne:  "Active"},
+                    delete_at: { $exists: false },
+                    joining_date: { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { leaveing_date: { $eq: null } },
+                        { leaveing_date: { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: "roles", localField: "role_id", foreignField: "_id", as: "role"
+                }
+            },
+            { $unwind: { path: "$role" } },
+            {
+                $match: {
+                    $expr: {
+                        $and: [
+                            { $ne: ["$role.name", "admin"] },
+                            { $ne: ["$role.name", "Admin"] },
+                        ],
+                    },
+                }
+            },
+            {
+                $project: {
+                    "_id": 1
+                }
+            }
+        ])
+
         // leave request count
         const leaveRequest = await Leave.aggregate([
             { $match: { status: "Pending", deleteAt: { $exists: false } } },
@@ -221,9 +256,10 @@ DashboardRoute.get('/', Auth, async (req, res) => {
         res.status(200).json({
             totalEmployee: value.length,
             leaveRequest: leaveRequest.length,
-            presentToday: value.length - FullLeaveToday.length,
+            presentToday: value.length - FullLeaveToday.length - inActiveEmployee.length,
             absentTodayCount: FullLeaveToday.length,
             halfLeaveToday: HalfLeaveToday.length,
+            inActiveEmployee: inActiveEmployee.length,
             absentToday: absentToday.map((val) => {
                 return {
                     ...val,
