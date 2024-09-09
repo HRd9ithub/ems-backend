@@ -87,6 +87,11 @@ const menuData = [{
     "name": "Clients",
     "path": "/client",
     "icon": "fa-solid fa-dollar-sign"
+},
+{
+    "name": "Project Wise Work Report",
+    "icon": "fa-solid fa-gear",
+    "path": "/project-work-report"
 }
 ]
 

@@ -115,7 +115,7 @@ const getLeave = async (req, res) => {
         // check for id 
         let identify = id || req.permissions.name.toLowerCase() !== "admin";
         let leave_for_status = "";
-        if(leave_for && leave_for !== "null"){
+        if (leave_for && leave_for !== "null") {
             leave_for_status = leave_for === "Half" ? ["Second Half", "First Half"] : ["Full"]
         }
 
@@ -143,8 +143,8 @@ const getLeave = async (req, res) => {
                         }
                     ],
                     deleteAt: { $exists: false },
-                    status: status && status !== "null"? {$eq: status} : {$ne: []},
-                    leave_for: leave_for_status ? {$in: leave_for_status} : {$ne: []}
+                    status: status && status !== "null" ? { $eq: status } : { $ne: [] },
+                    leave_for: leave_for_status ? { $in: leave_for_status } : { $ne: [] }
                 }
             },
             {
@@ -225,7 +225,7 @@ const getLeave = async (req, res) => {
             const leaveSettingData = await leave_setting.aggregate([
                 {
                     $match: {
-                        deleteAt: {$exists: false}
+                        deleteAt: { $exists: false }
                     }
                 },
                 {
@@ -516,6 +516,17 @@ const getNotifications = async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWorkData',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
                 $unwind: {
                     path: '$work'
                 }
@@ -544,7 +555,8 @@ const getNotifications = async (req, res) => {
                         status: '$status',
                         wortReportId: '$wortReportId',
                         _id: '$_id',
-
+                        extraWork: '$extraWork',
+                        extraWorkData: '$extraWorkData'
                     },
                     work: {
                         $push: '$work'
@@ -572,6 +584,8 @@ const getNotifications = async (req, res) => {
                     userId: "$_id.userId",
                     totalHours: "$_id.totalHours",
                     date: "$_id.date",
+                    extraWork: "$_id.extraWork",
+                    extraWorkData: "$_id.extraWorkData",
                     work: 1,
                     title: "$_id.title",
                     status: "$_id.status",
@@ -767,8 +781,19 @@ const getAllNotifications = async (req, res) => {
             {
                 $match: {
                     status: {
-                        $in:  ['Pending', "Read"]
+                        $in: ['Pending', "Read"]
                     }
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWorkData',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
@@ -800,7 +825,8 @@ const getAllNotifications = async (req, res) => {
                         status: '$status',
                         wortReportId: '$wortReportId',
                         _id: '$_id',
-
+                        extraWork: '$extraWork',
+                        extraWorkData: '$extraWorkData'
                     },
                     work: {
                         $push: '$work'
@@ -828,6 +854,8 @@ const getAllNotifications = async (req, res) => {
                     userId: "$_id.userId",
                     totalHours: "$_id.totalHours",
                     date: "$_id.date",
+                    extraWork: "$_id.extraWork",
+                    extraWorkData: "$_id.extraWorkData",
                     work: 1,
                     title: "$_id.title",
                     status: "$_id.status",
@@ -847,7 +875,7 @@ const getAllNotifications = async (req, res) => {
             {
                 $match: {
                     status: {
-                        $in:  ['Pending', "Read"]
+                        $in: ['Pending', "Read"]
                     }
                 }
             },
@@ -900,7 +928,7 @@ const getAllNotifications = async (req, res) => {
                 }
             }
         })
-        return res.status(200).json({ message: "Notification data fetch successfully.",permissions: req.permissions , success: true, notification: finalData })
+        return res.status(200).json({ message: "Notification data fetch successfully.", permissions: req.permissions, success: true, notification: finalData })
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
