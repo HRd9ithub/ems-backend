@@ -241,7 +241,7 @@ const rolePermission = async (req, res, next) => {
 // * ================== report route permission check ===========================
 const reportPermission = async (req, res, next) => {
     try {
-        let permission = await getRoleData(req.user.role_id, "work report");
+        let permission = await getRoleData(req.user.role_id, "employee wise work report");
 
         req.permissions = permission;
 
@@ -254,6 +254,20 @@ const reportPermission = async (req, res, next) => {
         } else if (req.method === "DELETE") {
             permission.permissions.delete !== 0 ? next() : res.status(403).json({ message: "You do not have permission to delete work report." })
         }
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+const reportProjectPermission = async (req, res, next) => {
+    try {
+        let permission = await getRoleData(req.user.role_id, "project wise work report");
+
+        req.permissions = permission;
+
+        if (req.method === "GET" && req.route.path == "/project-wise") {
+            permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing work report to the work report Data. please contact admin.", permissions: req.permissions })
+        } 
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -388,5 +402,6 @@ module.exports = {
     leavePermission,
     leaveTypePermission,
     holidayPermission,
-    notificationPermission
+    notificationPermission,
+    reportProjectPermission
 }
