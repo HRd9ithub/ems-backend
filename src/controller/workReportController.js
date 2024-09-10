@@ -29,7 +29,7 @@ const createReport = async (req, res) => {
             return res.status(422).json({ error: [...new Set(err)], success: false })
         }
 
-        if(extraWork){
+        if (extraWork) {
             extraWork.projectId = extraWork.projectId || null;
         }
 
@@ -93,7 +93,7 @@ const updateReport = async (req, res) => {
             return res.status(422).json({ error: [...new Set(err)], success: false })
         }
 
-        if(extraWork){
+        if (extraWork) {
             extraWork.projectId = extraWork.projectId || null;
         }
 
@@ -177,7 +177,7 @@ const getReport = async (req, res) => {
                             ]
                         }
                     ],
-                    deleteAt: {$exists: false}
+                    deleteAt: { $exists: false }
                 }
             },
             {
@@ -314,22 +314,22 @@ const getReport = async (req, res) => {
                         status: val.user.status,
                     },
                     userId: val.user_id,
-                    _id : val._id
+                    _id: val._id
                 })
             }
         });
 
         result.push(...findResult);
 
-        let finalRecord =[] 
+        let finalRecord = []
         result.map((value) => {
             const entry = findResult.find((elem) => {
                 return elem.date === value.date && (elem.leave_for === "Half" || elem.leave_for === "First Half" || elem.leave_for === "Second Half") && elem.userId.toString() == value.userId.toString()
             });
-            if (!entry){
+            if (!entry) {
                 finalRecord.push(value);
-            }else if(entry && !value.name){
-                finalRecord.push({...value, leave_for: entry.leave_for + " Leave"});
+            } else if (entry && !value.name) {
+                finalRecord.push({ ...value, leave_for: entry.leave_for + " Leave" });
             }
         })
 
@@ -459,7 +459,7 @@ const generatorPdf = async (req, res) => {
                     ]
                 }
             ],
-            deleteAt: {$exists: false}
+            deleteAt: { $exists: false }
         })
 
         // holiday data get
@@ -470,7 +470,7 @@ const generatorPdf = async (req, res) => {
             ]
         })
 
-        
+
         // leave between days add
         leaveData.forEach((val) => {
             var from_date = moment(val.from_date);
@@ -482,7 +482,7 @@ const generatorPdf = async (req, res) => {
                     return item.date === moment(new_date).format("YYYY-MM-DD")
                 })
                 if (!result) {
-                    findResult.push({ date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for, _id : val._id })
+                    findResult.push({ date: moment(new_date).format("YYYY-MM-DD"), name: "Leave", leave_for: val.leave_for, _id: val._id })
                 }
             }
         });
@@ -492,14 +492,14 @@ const generatorPdf = async (req, res) => {
             const entry = findResult.find((elem) => {
                 return elem.date === val.date
             });
-            if(entry && (entry.leave_for === "Half" || entry.leave_for === "Fisrt Half" || entry.leave_for === "Second Half")){
+            if (entry && (entry.leave_for === "Half" || entry.leave_for === "Fisrt Half" || entry.leave_for === "Second Half")) {
                 halfleaveData.push(entry._id)
-               return {...val, leave_for: entry.leave_for + " Leave"}
-            }else{
+                return { ...val, leave_for: entry.leave_for + " Leave" }
+            } else {
                 return val
             }
         });
-        
+
         const removehlafleave = findResult.filter((val) => {
             return !halfleaveData.includes(val._id)
         })
@@ -658,5 +658,177 @@ const downloadReport = async (req, res) => {
     }
 }
 
+const getWorkReportsByProject = async (req, res) => {
+    try {
+        // const { projectId } = req.params;
+        let { startDate, endDate, projectId } = req.query;
+        var a = moment(startDate, "YYYY-MM-DD");
+        var b = moment(endDate, "YYYY-MM-DD");
 
-module.exports = { createReport, getReport, updateReport, generatorPdf, downloadReport }
+        if (!a.isValid() || !b.isValid()) {
+            return res.status(400).json({ message: "Please enter valid startDate and endDate.", success: false });
+        }
+
+        const matchCondition = [
+            { date: { $gte: startDate, $lte: endDate } }
+        ];
+
+        // Check if projectId is provided
+        if (projectId) {
+            matchCondition.push({
+                $or: [
+                    { 'work.projectId': new mongoose.Types.ObjectId(projectId) },
+                    { 'extraWork.projectId': new mongoose.Types.ObjectId(projectId) }
+                ]
+            });
+        }
+
+        const workReports = await report.aggregate([
+            {
+                $match: {
+                    $and: matchCondition 
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects",
+                    let: { projectId: '$extraWork.projectId' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$_id', '$$projectId'] } } },
+                        { $project: { name: 1, _id: 1 } }
+                    ],
+                    as: 'extraWork.project'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWork.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $unwind: '$work'
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    let: { userId: '$userId' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ['$_id', '$$userId'] },
+                                delete_at: { $exists: false },
+                                joining_date: { $lte: new Date(moment(new Date()).format('YYYY-MM-DD')) },
+                                $or: [
+                                    { leaveing_date: { $eq: null } },
+                                    { leaveing_date: { $gt: new Date(moment(new Date()).format('YYYY-MM-DD')) } }
+                                ]
+                            }
+                        },
+                        { $project: { first_name: 1, last_name: 1, status: 1 } }
+                    ],
+                    as: 'user'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'projects',
+                    localField: 'work.projectId',
+                    foreignField: '_id',
+                    as: 'work.project'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    work: { $push: '$work' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.work': '$work'
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
+                $addFields: {
+                    work: {
+                        $filter: {
+                            input: '$work',
+                            as: 'w',
+                            cond: projectId ? { $eq: ['$$w.projectId', new mongoose.Types.ObjectId(projectId)] } : true
+                        }
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    extraWork: {
+                        $cond: {
+                            if: { $eq: ['$extraWork.projectId', projectId ? new mongoose.Types.ObjectId(projectId) : '$extraWork.projectId'] },
+                            then: '$extraWork',
+                            else: null
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    date: 1,
+                    userId: 1,
+                    totalHours: 1,
+                    work: 1,
+                    extraWork: 1,
+                    user: 1,
+                    updatedAt: 1,
+                    createdAt: 1
+                }
+            }
+        ]);
+
+        const result = workReports.map((val) => {
+            return {
+                ...val,
+                user: {
+                    first_name: decryptData(val.user?.first_name || ""),
+                    last_name: decryptData(val.user?.last_name || ""),
+                    status: val.user.status,
+                },
+                totalHours: val?.work?.reduce((acc, cur) => {
+                    return acc + Number(cur.hours);
+                },0) || 0
+            }
+        })
+
+        return res.status(200).json({
+            success: true,
+            data: result,
+            message: "Work report data fetch successfully.",
+            permissions: req.permissions 
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || "Internal server error.",
+            success: false
+        })
+    }
+}
+
+module.exports = { createReport, getReport, updateReport, generatorPdf, downloadReport, getWorkReportsByProject }
