@@ -17,7 +17,7 @@ const ReportRequestSchema = require("../models/reportRequestSchema");
 
 const createReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours, _id } = req.body;
+        let { userId, work, date, totalHours, _id, extraWork } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -27,6 +27,10 @@ const createReport = async (req, res) => {
         // check data validation error
         if (!errors.isEmpty()) {
             return res.status(422).json({ error: [...new Set(err)], success: false })
+        }
+
+        if(extraWork){
+            extraWork.projectId = extraWork.projectId || null;
         }
 
         let error = []
@@ -50,7 +54,8 @@ const createReport = async (req, res) => {
             userId: userId || req.user._id,
             work,
             date,
-            totalHours
+            totalHours,
+            extraWork
         });
         const response = await reportData.save();
         if (req.permissions.name.toLowerCase() !== "admin") {
@@ -76,7 +81,7 @@ const createReport = async (req, res) => {
 // update report 
 const updateReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours, _id } = req.body;
+        let { userId, work, date, totalHours, _id, extraWork } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -86,6 +91,10 @@ const updateReport = async (req, res) => {
         // check data validation error
         if (!errors.isEmpty()) {
             return res.status(422).json({ error: [...new Set(err)], success: false })
+        }
+
+        if(extraWork){
+            extraWork.projectId = extraWork.projectId || null;
         }
 
         let error = []
@@ -109,7 +118,8 @@ const updateReport = async (req, res) => {
             userId: userId || req.user._id,
             work,
             date,
-            totalHours
+            totalHours,
+            extraWork
         }, { new: true })
 
         if (updateData) {
@@ -200,6 +210,17 @@ const getReport = async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWorkData',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
                 $unwind: {
                     path: '$work'
                 }
@@ -225,7 +246,8 @@ const getReport = async (req, res) => {
                         totalHours: '$totalHours',
                         date: '$date',
                         _id: '$_id',
-
+                        extraWork: '$extraWork',
+                        extraWorkData: '$extraWorkData'
                     },
                     work: {
                         $push: '$work'
@@ -254,6 +276,8 @@ const getReport = async (req, res) => {
                     userId: "$_id.userId",
                     totalHours: "$_id.totalHours",
                     date: "$_id.date",
+                    extraWork: "$_id.extraWork",
+                    extraWorkData: "$_id.extraWorkData",
                     work: 1,
                     updatedAt: "$_id.updatedAt",
                     _id: "$_id._id",
@@ -359,6 +383,17 @@ const generatorPdf = async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWork.project"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWork.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
                 $unwind: {
                     path: '$work'
                 }
@@ -384,7 +419,7 @@ const generatorPdf = async (req, res) => {
                         totalHours: '$totalHours',
                         date: '$date',
                         _id: '$_id',
-
+                        extraWork: '$extraWork'
                     },
                     work: {
                         $push: '$work'
@@ -398,7 +433,8 @@ const generatorPdf = async (req, res) => {
                     date: "$_id.date",
                     work: 1,
                     updatedAt: "$_id.updatedAt",
-                    _id: "$_id._id"
+                    _id: "$_id._id",
+                    extraWork: "$_id.extraWork"
                 }
             }
         ])
@@ -530,12 +566,17 @@ const generatorPdf = async (req, res) => {
             return (accumulator.totalHours ? Number(accumulator.totalHours) : Number(accumulator)) + Number(currentValue.totalHours)
         }, 0)
 
+        const extraHours = reportData.reduce((accumulator, currentValue) => {
+            return ((currentValue.extraWork && Object.keys(currentValue.extraWork).length !== 0) ? Number(currentValue.extraWork.hours) : 0) + Number(accumulator)
+        }, 0)
+
         const summary = {
             halfLeave: halfLeave.length,
             fullLeave: fullLeave.length,
             holidayCount,
             dayCount,
             totalHours,
+            extraHours
         }
 
         const response = await reportDownloadSchema.create({
@@ -551,8 +592,8 @@ const generatorPdf = async (req, res) => {
     }
 }
 
-// dowlonad pdf
-const dowloandReport = async (req, res) => {
+// download pdf
+const downloadReport = async (req, res) => {
     try {
         const { id } = req.query;
 
@@ -618,4 +659,4 @@ const dowloandReport = async (req, res) => {
 }
 
 
-module.exports = { createReport, getReport, updateReport, generatorPdf, dowloandReport }
+module.exports = { createReport, getReport, updateReport, generatorPdf, downloadReport }

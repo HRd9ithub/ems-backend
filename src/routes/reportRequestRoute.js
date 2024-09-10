@@ -39,7 +39,12 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(422).json({ error: [...new Set(err)], success: false })
         }
-        let { work, date, totalHours, title,wortReportId } = req.body;
+        let { work, date, totalHours, title,wortReportId, extraWork } = req.body;
+
+        if(extraWork){
+            extraWork.projectId = extraWork.projectId || null;
+        }
+
         if (req.body.title === "Add Request") {
             let data = await report.findOne({ date: req.body.date, userId: req.user._id })
 
@@ -55,7 +60,8 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
             work,
             date,
             totalHours,
-            wortReportId : wortReportId && wortReportId
+            wortReportId : wortReportId && wortReportId,
+            extraWork
         })
         const reportRequestDataResponse = await reportRequestData.save();
 
@@ -65,6 +71,17 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
             {
                 $match: {
                     _id: new mongoose.Types.ObjectId(reportRequestDataResponse._id)
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWorkData',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
@@ -93,7 +110,8 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
                         totalHours: '$totalHours',
                         date: '$date',
                         _id: '$_id',
-
+                        extraWork: '$extraWork',
+                        extraWorkData: '$extraWorkData'
                     },
                     work: {
                         $push: '$work'
@@ -108,6 +126,8 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
                     work: 1,
                     updatedAt: "$_id.updatedAt",
                     _id: "$_id._id",
+                    extraWork: "$_id.extraWork",
+                    extraWorkData: "$_id.extraWorkData",
                 }
             }
         ])
@@ -116,7 +136,12 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
         
             const workResult = workData[0].work.map((val) => {
                 return { description: val.description, hours: val.hours, project: val.project?.name }
-            })
+            });
+
+            let extraWork = workData[0].extraWork;
+            if(extraWork){
+                extraWork.projectName = workData[0].extraWorkData?.name;
+            }
 
             const contentData = {
                 timestamp: moment(req.body.date).format("DD MMM YYYY"),
@@ -124,7 +149,8 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
                 title: req.body.title,
                 work: workResult,
                 totalHours,
-                isAdmin : false
+                isAdmin : false,
+                extraWork
             }
 
             await workReportMail(res, emaiList, contentData)

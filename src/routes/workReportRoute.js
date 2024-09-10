@@ -1,7 +1,7 @@
 const express = require("express")
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
-const { createReport, getReport, updateReport, generatorPdf, dowloandReport } = require("../controller/workReportController");
+const { createReport, getReport, updateReport, generatorPdf, downloadReport } = require("../controller/workReportController");
 const { reportPermission } = require("../middlewares/permission");
 
 const workReportRoute = express.Router();
@@ -31,7 +31,7 @@ workReportRoute.get('/', Auth, reportPermission, getReport);
 // preview api
 workReportRoute.post('/report-preview', generatorPdf);
 // pdf api
-workReportRoute.get('/report-dowloand', dowloandReport);
+workReportRoute.get('/report-download', downloadReport);
 
 
 module.exports = workReportRoute

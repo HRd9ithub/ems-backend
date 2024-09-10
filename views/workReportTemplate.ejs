@@ -105,6 +105,19 @@
                           <% }) %>
                         </ol>
                     </p>
+                    <% if(extraWork) { %>
+                      <p style="color: #000000;font-size: .9375rem;font-weight: 600; margin-bottom: 0;">
+                        Extra Work Details: 
+                          <ol style="padding: 0;">
+                              <div>
+                                <strong style="color: #084c89;"">1 <%= extraWork.projectName %> (<%= extraWork.hours %>)</strong>
+                                <div className='w-100 text-wrap'>
+                                  <%- extraWork.description %>
+                                </div>
+                              </div>
+                          </ol>
+                      </p>
+                    <% } %>
                     <p style="color: #000000;font-size: .9375rem;text-align:justify;">
                     <div><strong>Thanks & Regards</strong></div>
                     <div><strong style="color: #084c89;"><%= name %></strong></div>
