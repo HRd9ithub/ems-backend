@@ -11,10 +11,23 @@ const createMenu = async (req, res) => {
             // exists menu name for send message
             return res.status(400).json({ message: "Menu name already exists.", success: false })
         }
-
-        // not exists menu name for add database
         const menuData = new menu(req.body);
         const response = await menuData.save();
+
+        // Update all roles to include the new menu with default permissions
+        const defaultPermissions = {
+            menuId: response._id,
+            list: 0,
+            create: 0,
+            update: 0,
+            delete: 0
+        };
+
+        await role.updateMany(
+            { name: { $not: { $regex: '^admin$', $options: 'i' } } },
+            { $push: { permissions: defaultPermissions } }
+        );
+
         return res.status(201).json({ success: true, message: "Successfully added a new menu." })
 
     } catch (error) {
@@ -64,7 +77,7 @@ const deleteMenu = async (req, res) => {
 const getMenu = async (req, res) => {
     try {
         let data = ""
-        const roleName = await role.findOne({ _id: req.user.role_id}, { name: 1, _id: 0 })
+        const roleName = await role.findOne({ _id: req.user.role_id }, { name: 1, _id: 0 })
         // get menu data in database
         if (roleName && roleName.name.toLowerCase() !== "admin") {
             data = await role.aggregate([
@@ -78,8 +91,8 @@ const getMenu = async (req, res) => {
                         foreignField: "_id",
                         as: "menu"
                     }
-                }, 
-                { $sort : { "menu.createdAt" : 1 } },
+                },
+                { $sort: { "menu.createdAt": 1 } },
                 {
                     $project: {
                         "name": { $first: "$menu.name" },
@@ -91,10 +104,10 @@ const getMenu = async (req, res) => {
 
             ])
         } else {
-            data = await menu.find({}, { name: 1,path :1,icon :1 }).sort({_id : 1})
+            data = await menu.find({}, { name: 1, path: 1, icon: 1 }).sort({ _id: 1 })
         }
 
-        return res.status(200).json({ success: true, message: "Successfully fetch a menu data.", data: data})
+        return res.status(200).json({ success: true, message: "Successfully fetch a menu data.", data: data })
 
     } catch (error) {
         res.status(500).json({ message: error.message || "Internal server error", success: false })

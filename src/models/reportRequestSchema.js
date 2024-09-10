@@ -44,6 +44,19 @@ const reportRequestSchema = new mongoose.Schema({
         enum: ['Pending', "Read","Approved","Declined"],
         default: "Pending"
     },
+    extraWork: {
+        type: {
+            projectId: {
+                type: mongoose.Schema.Types.ObjectId,
+            },
+            description: {
+                type: String,
+            },
+            hours: {
+                type: String,
+            }
+        }
+    },
     deleteAt: {
         type: Date
     }

@@ -30,6 +30,19 @@ const workReportSchema = new mongoose.Schema({
             },
         }],
         required: true
+    },
+    extraWork: {
+        type: {
+            projectId: {
+                type: mongoose.Schema.Types.ObjectId,
+            },
+            description: {
+                type: String,
+            },
+            hours: {
+                type: String,
+            }
+        }
     }
 }, {
     timestamps: true,

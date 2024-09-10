@@ -64,8 +64,8 @@ const menuData = [{
     "icon": "fa-solid fa-gear"
 },
 {
-    "name": "Work Report",
-    "path": "/work-report",
+    "name": "Employee Wise Work Report",
+    "path": "/work-report/employee",
     "icon": "fa-solid fa-gear"
 },
 {
@@ -87,6 +87,11 @@ const menuData = [{
     "name": "Clients",
     "path": "/client",
     "icon": "fa-solid fa-dollar-sign"
+},
+{
+    "name": "Project Wise Work Report",
+    "icon": "fa-solid fa-gear",
+    "path": "/work-report/project"
 }
 ]
 
