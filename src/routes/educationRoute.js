@@ -9,7 +9,7 @@ educationRoute.post('/', Auth, [
     expressValidator.body('user_id', "User id is Required.").isMongoId(),
     expressValidator.body('info', "Insert values ​​into the array.").isArray(),
     expressValidator.body('info.*.year', "Year Field is Required.").notEmpty().custom(async (year, { req }) => {
-        if (year && (year.length < 4 || year > new Date().getFullYear())) {
+        if (year && (year.length < 4)) {
             throw new Error('Please enter a valid year.')
         }
     }),
