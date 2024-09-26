@@ -12,27 +12,9 @@ const reportRequestSchema = new mongoose.Schema({
         type: String,
         require: true
     },
-    totalHours : {
+    totalHours: {
         type: String,
-        required : [true , "Totak hours is a required field."]
-    },
-    work : {
-        type:[{
-            projectId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "project",
-                required: "Project is a required field."
-            },
-            description: {
-                type: String,
-                required: "Description is a required field."
-            },
-            hours: {
-                type: String,
-                required: "Working hours is a required field."
-            },
-        }],
-        required: true
+        required: [true, "Totak hours is a required field."]
     },
     title: {
         type: String,
@@ -41,21 +23,42 @@ const reportRequestSchema = new mongoose.Schema({
     status: {
         type: String,
         require: true,
-        enum: ['Pending', "Read","Approved","Declined"],
+        enum: ['Pending', "Read", "Approved", "Declined"],
         default: "Pending"
     },
-    extraWork: {
-        type: {
+    extraTotalHours: {
+        type: Number,
+        required: [true, "Extra total hours is a required field."]
+    },
+    work: {
+        type: [{
             projectId: {
                 type: mongoose.Schema.Types.ObjectId,
+                ref: "project",
             },
             description: {
                 type: String,
             },
             hours: {
                 type: String,
-            }
-        }
+            },
+        }],
+        required: true
+    },
+    extraWork: {
+        type: [{
+            projectId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "project",
+            },
+            description: {
+                type: String,
+            },
+            hours: {
+                type: String,
+            },
+        }],
+        required: true
     },
     deleteAt: {
         type: Date
