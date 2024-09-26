@@ -17,20 +17,21 @@ const ReportRequestSchema = require("../models/reportRequestSchema");
 
 const createReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours, _id, extraWork } = req.body;
+        let { userId, work, date, totalHours, _id, extraWork, extraTotalHours } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
         let err = errors.array().map((val) => {
             return val.msg
         })
+
         // check data validation error
         if (!errors.isEmpty()) {
             return res.status(422).json({ error: [...new Set(err)], success: false })
         }
 
-        if (extraWork) {
-            extraWork.projectId = extraWork.projectId || null;
+        if (work.length < 1 && extraWork.length < 1) {
+            return res.status(422).json({ error: ["Please add for work data or extra Work data, and try again."], success: false })
         }
 
         let error = []
@@ -55,7 +56,8 @@ const createReport = async (req, res) => {
             work,
             date,
             totalHours,
-            extraWork
+            extraWork,
+            extraTotalHours
         });
         const response = await reportData.save();
         if (req.permissions.name.toLowerCase() !== "admin") {
@@ -81,7 +83,7 @@ const createReport = async (req, res) => {
 // update report 
 const updateReport = async (req, res) => {
     try {
-        let { userId, work, date, totalHours, _id, extraWork } = req.body;
+        let { userId, work, date, totalHours, _id, extraWork, extraTotalHours } = req.body;
 
         const errors = expressValidator.validationResult(req)
 
@@ -93,8 +95,8 @@ const updateReport = async (req, res) => {
             return res.status(422).json({ error: [...new Set(err)], success: false })
         }
 
-        if (extraWork) {
-            extraWork.projectId = extraWork.projectId || null;
+        if (work.length < 1 && extraWork.length < 1) {
+            return res.status(422).json({ error: ["Please add for work data or extra Work data, and try again."], success: false })
         }
 
         let error = []
@@ -119,7 +121,8 @@ const updateReport = async (req, res) => {
             work,
             date,
             totalHours,
-            extraWork
+            extraWork,
+            extraTotalHours
         }, { new: true })
 
         if (updateData) {
@@ -199,35 +202,69 @@ const getReport = async (req, res) => {
             },
         ]);
 
-        // get project data in database
-        const data = await report.aggregate([
+        const workReports = await report.aggregate([
             {
                 $match: {
                     $and: [
                         { date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
-                        { date: { $lte: moment(endDate).format("YYYY-MM-DD") } }],
+                        { date: { $lte: moment(endDate).format("YYYY-MM-DD") } }
+                    ],
                     userId: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) }
                 }
             },
             {
-                $lookup: {
-                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
-                }
-            },
-            {
                 $unwind: {
-                    path: '$extraWorkData',
+                    path: '$extraWork',
                     preserveNullAndEmptyArrays: true
                 }
             },
             {
+                $lookup: {
+                    from: 'projects',
+                    localField: 'extraWork.projectId',
+                    foreignField: '_id',
+                    as: 'extraWork.project'
+                }
+            },
+            {
                 $unwind: {
-                    path: '$work'
+                    path: '$extraWork.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    extraWork: { $push: '$extraWork' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.extraWork': {
+                        $filter: {
+                            input: '$extraWork',
+                            as: 'ew',
+                            cond: { $ne: ['$$ew', {}] }
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
+                $unwind: {
+                    path: '$work',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
                 $lookup: {
-                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                    from: 'projects',
+                    localField: 'work.projectId',
+                    foreignField: '_id',
+                    as: 'work.project'
                 }
             },
             {
@@ -239,58 +276,74 @@ const getReport = async (req, res) => {
             {
                 $group: {
                     _id: '$_id',
-                    _id: {
-                        userId: '$userId',
-                        createdAt: '$createdAt',
-                        updatedAt: '$updatedAt',
-                        totalHours: '$totalHours',
-                        date: '$date',
-                        _id: '$_id',
-                        extraWork: '$extraWork',
-                        extraWorkData: '$extraWorkData'
-                    },
-                    work: {
-                        $push: '$work'
+                    originalDocument: { $first: '$$ROOT' },
+                    work: { $push: '$work' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.work': {
+                        $filter: {
+                            input: '$work',
+                            as: 'w',
+                            cond: { $ne: ['$$w', {}] }  // This filters out empty objects from the array
+                        }
                     }
                 }
             },
             {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
                 $lookup: {
-                    from: "users", localField: "_id.userId", foreignField: "_id", as: "user"
+                    from: 'users',
+                    let: { userId: '$userId' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ['$_id', '$$userId'] },
+                                delete_at: { $exists: false },
+                                joining_date: { $lte: new Date(moment(new Date()).format('YYYY-MM-DD')) },
+                                $or: [
+                                    { leaveing_date: { $eq: null } },
+                                    { leaveing_date: { $gt: new Date(moment(new Date()).format('YYYY-MM-DD')) } }
+                                ]
+                            }
+                        },
+                        { $project: { first_name: 1, last_name: 1, status: 1 } }
+                    ],
+                    as: 'user'
                 }
             },
-            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
             {
-                $match: {
-                    // "user.status": "Active",
-                    "user.delete_at": { $exists: false },
-                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
-                    $or: [
-                        { "user.leaveing_date": { $eq: null } },
-                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
-                    ]
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
                 $project: {
-                    userId: "$_id.userId",
-                    totalHours: "$_id.totalHours",
-                    date: "$_id.date",
-                    extraWork: "$_id.extraWork",
-                    extraWorkData: "$_id.extraWorkData",
+                    _id: 1,
+                    date: 1,
+                    userId: 1,
+                    totalHours: 1,
                     work: 1,
-                    updatedAt: "$_id.updatedAt",
-                    _id: "$_id._id",
-                    "user.employee_id": 1,
-                    "user.profile_image": 1,
-                    "user.first_name": 1,
-                    "user.status": 1,
-                    "user.last_name": 1
+                    extraWork: 1,
+                    user: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
+                    extraTotalHours: {
+                        $reduce: {
+                            input: "$extraWork",
+                            initialValue: 0,
+                            in: { $add: ["$$value", { $toDouble: "$$this.hours" }] }
+                        }
+                    }
                 }
             }
-        ])
+        ]);
 
-        const result = data.map((val) => {
+        const result = workReports.map((val) => {
             return {
                 ...val,
                 user: {
@@ -337,7 +390,6 @@ const getReport = async (req, res) => {
             return new Date(val.date) <= new Date(endDate) && new Date(val.date) >= new Date(startDate)
         });
 
-
         // Custom sorting function
         function customSort(a, b) {
             // First, compare dates
@@ -383,8 +435,17 @@ const generatorPdf = async (req, res) => {
                 }
             },
             {
+                $unwind: {
+                    path: '$extraWork',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
                 $lookup: {
-                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWork.project"
+                    from: 'projects',
+                    localField: 'extraWork.projectId',
+                    foreignField: '_id',
+                    as: 'extraWork.project'
                 }
             },
             {
@@ -394,13 +455,38 @@ const generatorPdf = async (req, res) => {
                 }
             },
             {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    extraWork: { $push: '$extraWork' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.extraWork': {
+                        $filter: {
+                            input: '$extraWork',
+                            as: 'ew',
+                            cond: { $ne: ['$$ew', {}] }
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
                 $unwind: {
-                    path: '$work'
+                    path: '$work',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
                 $lookup: {
-                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                    from: 'projects',
+                    localField: 'work.projectId',
+                    foreignField: '_id',
+                    as: 'work.project'
                 }
             },
             {
@@ -412,29 +498,41 @@ const generatorPdf = async (req, res) => {
             {
                 $group: {
                     _id: '$_id',
-                    _id: {
-                        userId: '$userId',
-                        createdAt: '$createdAt',
-                        updatedAt: '$updatedAt',
-                        totalHours: '$totalHours',
-                        date: '$date',
-                        _id: '$_id',
-                        extraWork: '$extraWork'
-                    },
-                    work: {
-                        $push: '$work'
+                    originalDocument: { $first: '$$ROOT' },
+                    work: { $push: '$work' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.work': {
+                        $filter: {
+                            input: '$work',
+                            as: 'w',
+                            cond: { $ne: ['$$w', {}] }  // This filters out empty objects from the array
+                        }
                     }
                 }
             },
             {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
                 $project: {
-                    userId: "$_id.userId",
-                    totalHours: "$_id.totalHours",
-                    date: "$_id.date",
+                    _id: 1,
+                    date: 1,
+                    userId: 1,
+                    totalHours: 1,
                     work: 1,
-                    updatedAt: "$_id.updatedAt",
-                    _id: "$_id._id",
-                    extraWork: "$_id.extraWork"
+                    extraWork: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
+                    extraTotalHours: {
+                        $reduce: {
+                            input: "$extraWork",
+                            initialValue: 0,
+                            in: { $add: ["$$value", { $toDouble: "$$this.hours" }] }
+                        }
+                    }
                 }
             }
         ])
@@ -563,11 +661,11 @@ const generatorPdf = async (req, res) => {
         })
 
         const totalHours = reportData.reduce((accumulator, currentValue) => {
-            return (accumulator.totalHours ? Number(accumulator.totalHours) : Number(accumulator)) + Number(currentValue.totalHours)
+            return (currentValue.totalHours ? accumulator + Number(currentValue.totalHours) : accumulator)
         }, 0)
 
         const extraHours = reportData.reduce((accumulator, currentValue) => {
-            return ((currentValue.extraWork && Object.keys(currentValue.extraWork).length !== 0) ? Number(currentValue.extraWork.hours) : 0) + Number(accumulator)
+            return (currentValue.extraTotalHours ? accumulator + Number(currentValue.extraTotalHours) : accumulator)
         }, 0)
 
         const summary = {
@@ -660,7 +758,6 @@ const downloadReport = async (req, res) => {
 
 const getWorkReportsByProject = async (req, res) => {
     try {
-        // const { projectId } = req.params;
         let { startDate, endDate, projectId } = req.query;
         var a = moment(startDate, "YYYY-MM-DD");
         var b = moment(endDate, "YYYY-MM-DD");
@@ -683,32 +780,43 @@ const getWorkReportsByProject = async (req, res) => {
             });
         }
 
-        const workReports = await report.aggregate([
-            {
-                $match: {
-                    $and: matchCondition 
-                }
-            },
+        const pipeline = [
+            { $match: { $and: matchCondition } },
+            // Unwind and lookup for extraWork
+            { $unwind: { path: '$extraWork', preserveNullAndEmptyArrays: true } },
             {
                 $lookup: {
-                    from: "projects",
-                    let: { projectId: '$extraWork.projectId' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$_id', '$$projectId'] } } },
-                        { $project: { name: 1, _id: 1 } }
-                    ],
+                    from: 'projects',
+                    localField: 'extraWork.projectId',
+                    foreignField: '_id',
                     as: 'extraWork.project'
                 }
             },
+            { $unwind: { path: '$extraWork.project', preserveNullAndEmptyArrays: true } },
+            // Group back extraWork
             {
-                $unwind: {
-                    path: '$extraWork.project',
-                    preserveNullAndEmptyArrays: true
+                $group: {
+                    _id: '$_id',
+                    doc: { $first: '$$ROOT' },
+                    extraWork: { $push: '$extraWork' }
                 }
             },
+            { $addFields: { 'doc.extraWork': '$extraWork' } },
+            { $replaceRoot: { newRoot: '$doc' } },
+            // Filter extraWork if projectId is provided
             {
-                $unwind: '$work'
+                $addFields: {
+                    extraWork: {
+                        $filter: {
+                            input: '$extraWork',
+                            cond: projectId
+                                ? { $eq: ['$$this.projectId', new mongoose.Types.ObjectId(projectId)] }
+                                : { $ne: ['$$this', {}] }
+                        }
+                    }
+                }
             },
+            // Lookup for user
             {
                 $lookup: {
                     from: 'users',
@@ -718,10 +826,10 @@ const getWorkReportsByProject = async (req, res) => {
                             $match: {
                                 $expr: { $eq: ['$_id', '$$userId'] },
                                 delete_at: { $exists: false },
-                                joining_date: { $lte: new Date(moment(new Date()).format('YYYY-MM-DD')) },
+                                joining_date: { $lte: new Date() },
                                 $or: [
-                                    { leaveing_date: { $eq: null } },
-                                    { leaveing_date: { $gt: new Date(moment(new Date()).format('YYYY-MM-DD')) } }
+                                    { leaveing_date: null },
+                                    { leaveing_date: { $gt: new Date() } }
                                 ]
                             }
                         },
@@ -730,12 +838,9 @@ const getWorkReportsByProject = async (req, res) => {
                     as: 'user'
                 }
             },
-            {
-                $unwind: {
-                    path: '$user',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+            // Unwind and lookup for work
+            { $unwind: { path: '$work', preserveNullAndEmptyArrays: true } },
             {
                 $lookup: {
                     from: 'projects',
@@ -744,55 +849,50 @@ const getWorkReportsByProject = async (req, res) => {
                     as: 'work.project'
                 }
             },
-            {
-                $unwind: {
-                    path: '$work.project',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
+            { $unwind: { path: '$work.project', preserveNullAndEmptyArrays: true } },
+            // Group back work
             {
                 $group: {
                     _id: '$_id',
-                    originalDocument: { $first: '$$ROOT' },
+                    doc: { $first: '$$ROOT' },
                     work: { $push: '$work' }
                 }
             },
-            {
-                $addFields: {
-                    'originalDocument.work': '$work'
-                }
-            },
-            {
-                $replaceRoot: { newRoot: '$originalDocument' }
-            },
+            { $addFields: { 'doc.work': '$work' } },
+            { $replaceRoot: { newRoot: '$doc' } },
+            // Filter work if projectId is provided
             {
                 $addFields: {
                     work: {
                         $filter: {
                             input: '$work',
-                            as: 'w',
-                            cond: projectId ? { $eq: ['$$w.projectId', new mongoose.Types.ObjectId(projectId)] } : true
+                            cond: projectId
+                                ? { $eq: ['$$this.projectId', new mongoose.Types.ObjectId(projectId)] }
+                                : { $ne: ['$$this', {}] }
                         }
                     }
                 }
             },
-            {
-                $addFields: {
-                    extraWork: {
-                        $cond: {
-                            if: { $eq: ['$extraWork.projectId', projectId ? new mongoose.Types.ObjectId(projectId) : '$extraWork.projectId'] },
-                            then: '$extraWork',
-                            else: null
-                        }
-                    }
-                }
-            },
+            // Final projection
             {
                 $project: {
                     _id: 1,
                     date: 1,
                     userId: 1,
-                    totalHours: 1,
+                    totalHours: {
+                        $reduce: {
+                            input: '$work',
+                            initialValue: 0,
+                            in: { $add: ['$$value', { $toDouble: '$$this.hours' }] }
+                        }
+                    },
+                    extraTotalHours: {
+                        $reduce: {
+                            input: '$extraWork',
+                            initialValue: 0,
+                            in: { $add: ['$$value', { $toDouble: '$$this.hours' }] }
+                        }
+                    },
                     work: 1,
                     extraWork: 1,
                     user: 1,
@@ -800,7 +900,9 @@ const getWorkReportsByProject = async (req, res) => {
                     createdAt: 1
                 }
             }
-        ]);
+        ];
+
+        const workReports = await report.aggregate(pipeline);
 
         const result = workReports.map((val) => {
             return {
@@ -809,10 +911,7 @@ const getWorkReportsByProject = async (req, res) => {
                     first_name: decryptData(val.user?.first_name || ""),
                     last_name: decryptData(val.user?.last_name || ""),
                     status: val.user.status,
-                },
-                totalHours: val?.work?.reduce((acc, cur) => {
-                    return acc + Number(cur.hours);
-                },0) || 0
+                }
             }
         })
 
@@ -820,7 +919,7 @@ const getWorkReportsByProject = async (req, res) => {
             success: true,
             data: result,
             message: "Work report data fetch successfully.",
-            permissions: req.permissions 
+            permissions: req.permissions
         });
 
     } catch (error) {

@@ -516,24 +516,57 @@ const getNotifications = async (req, res) => {
                 }
             },
             {
-                $lookup: {
-                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
-                }
-            },
-            {
                 $unwind: {
-                    path: '$extraWorkData',
+                    path: '$extraWork',
                     preserveNullAndEmptyArrays: true
                 }
             },
             {
+                $lookup: {
+                    from: 'projects',
+                    localField: 'extraWork.projectId',
+                    foreignField: '_id',
+                    as: 'extraWork.project'
+                }
+            },
+            {
                 $unwind: {
-                    path: '$work'
+                    path: '$extraWork.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    extraWork: { $push: '$extraWork' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.extraWork': {
+                        $filter: {
+                            input: '$extraWork',
+                            as: 'ew',
+                            cond: { $ne: ['$$ew', {}] }
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            }, {
+                $unwind: {
+                    path: '$work',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
                 $lookup: {
-                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                    from: 'projects',
+                    localField: 'work.projectId',
+                    foreignField: '_id',
+                    as: 'work.project'
                 }
             },
             {
@@ -545,26 +578,27 @@ const getNotifications = async (req, res) => {
             {
                 $group: {
                     _id: '$_id',
-                    _id: {
-                        userId: '$userId',
-                        createdAt: '$createdAt',
-                        updatedAt: '$updatedAt',
-                        totalHours: '$totalHours',
-                        date: '$date',
-                        title: '$title',
-                        status: '$status',
-                        wortReportId: '$wortReportId',
-                        _id: '$_id',
-                        extraWork: '$extraWork',
-                        extraWorkData: '$extraWorkData'
-                    },
-                    work: {
-                        $push: '$work'
+                    originalDocument: { $first: '$$ROOT' },
+                    work: { $push: '$work' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.work': {
+                        $filter: {
+                            input: '$work',
+                            as: 'w',
+                            cond: { $ne: ['$$w', {}] }  // This filters out empty objects from the array
+                        }
                     }
                 }
-            }, {
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
                 $lookup: {
-                    from: "users", localField: "_id.userId", foreignField: "_id", as: "user"
+                    from: "users", localField: "userId", foreignField: "_id", as: "user"
                 }
             },
             { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
@@ -581,23 +615,29 @@ const getNotifications = async (req, res) => {
             },
             {
                 $project: {
-                    userId: "$_id.userId",
-                    totalHours: "$_id.totalHours",
-                    date: "$_id.date",
-                    extraWork: "$_id.extraWork",
-                    extraWorkData: "$_id.extraWorkData",
+                    _id: 1,
+                    date: 1,
+                    userId: 1,
+                    totalHours: 1,
                     work: 1,
-                    title: "$_id.title",
-                    status: "$_id.status",
-                    wortReportId: "$_id.wortReportId",
-                    updatedAt: "$_id.updatedAt",
-                    createdAt: "$_id.createdAt",
-                    _id: "$_id._id",
+                    extraWork: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
+                    title: 1,
+                    status: 1,
+                    wortReportId: 1,
                     "user.employee_id": 1,
                     "user.profile_image": 1,
                     "user.first_name": 1,
                     "user.status": 1,
-                    "user.last_name": 1
+                    "user.last_name": 1,
+                    extraTotalHours: {
+                        $reduce: {
+                            input: "$extraWork",
+                            initialValue: 0,
+                            in: { $add: ["$$value", { $toDouble: "$$this.hours" }] }
+                        }
+                    }
                 }
             }
         ])
@@ -780,30 +820,61 @@ const getAllNotifications = async (req, res) => {
         let result = await ReportRequestSchema.aggregate([
             {
                 $match: {
-                    status: {
-                        $in: ['Pending', "Read"]
-                    }
-                }
-            },
-            {
-                $lookup: {
-                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
+                    deleteAt: { $exists: false }
                 }
             },
             {
                 $unwind: {
-                    path: '$extraWorkData',
+                    path: '$extraWork',
                     preserveNullAndEmptyArrays: true
                 }
             },
             {
+                $lookup: {
+                    from: 'projects',
+                    localField: 'extraWork.projectId',
+                    foreignField: '_id',
+                    as: 'extraWork.project'
+                }
+            },
+            {
                 $unwind: {
-                    path: '$work'
+                    path: '$extraWork.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    extraWork: { $push: '$extraWork' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.extraWork': {
+                        $filter: {
+                            input: '$extraWork',
+                            as: 'ew',
+                            cond: { $ne: ['$$ew', {}] }
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            }, {
+                $unwind: {
+                    path: '$work',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
                 $lookup: {
-                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                    from: 'projects',
+                    localField: 'work.projectId',
+                    foreignField: '_id',
+                    as: 'work.project'
                 }
             },
             {
@@ -815,26 +886,27 @@ const getAllNotifications = async (req, res) => {
             {
                 $group: {
                     _id: '$_id',
-                    _id: {
-                        userId: '$userId',
-                        createdAt: '$createdAt',
-                        updatedAt: '$updatedAt',
-                        totalHours: '$totalHours',
-                        date: '$date',
-                        title: '$title',
-                        status: '$status',
-                        wortReportId: '$wortReportId',
-                        _id: '$_id',
-                        extraWork: '$extraWork',
-                        extraWorkData: '$extraWorkData'
-                    },
-                    work: {
-                        $push: '$work'
+                    originalDocument: { $first: '$$ROOT' },
+                    work: { $push: '$work' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.work': {
+                        $filter: {
+                            input: '$work',
+                            as: 'w',
+                            cond: { $ne: ['$$w', {}] }  // This filters out empty objects from the array
+                        }
                     }
                 }
-            }, {
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
                 $lookup: {
-                    from: "users", localField: "_id.userId", foreignField: "_id", as: "user"
+                    from: "users", localField: "userId", foreignField: "_id", as: "user"
                 }
             },
             { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
@@ -851,23 +923,29 @@ const getAllNotifications = async (req, res) => {
             },
             {
                 $project: {
-                    userId: "$_id.userId",
-                    totalHours: "$_id.totalHours",
-                    date: "$_id.date",
-                    extraWork: "$_id.extraWork",
-                    extraWorkData: "$_id.extraWorkData",
+                    _id: 1,
+                    date: 1,
+                    userId: 1,
+                    totalHours: 1,
                     work: 1,
-                    title: "$_id.title",
-                    status: "$_id.status",
-                    wortReportId: "$_id.wortReportId",
-                    updatedAt: "$_id.updatedAt",
-                    createdAt: "$_id.createdAt",
-                    _id: "$_id._id",
+                    extraWork: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
+                    title: 1,
+                    status: 1,
+                    wortReportId: 1,
                     "user.employee_id": 1,
                     "user.profile_image": 1,
                     "user.first_name": 1,
                     "user.status": 1,
-                    "user.last_name": 1
+                    "user.last_name": 1,
+                    extraTotalHours: {
+                        $reduce: {
+                            input: "$extraWork",
+                            initialValue: 0,
+                            in: { $add: ["$$value", { $toDouble: "$$this.hours" }] }
+                        }
+                    }
                 }
             }
         ])
