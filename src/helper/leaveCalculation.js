@@ -5,26 +5,12 @@ const moment = require("moment");
 
 const offDay = ["Saturday", "Sunday"]
 
-exports.leaveCalculation = async (userId, type, date) => {
+exports.leaveCalculation = async (userId, type,date) => {
     const identify = true;
     let total = 0;
     const joiningDate = moment(date);
-
-    // Current date
-    const currentDate = moment();
-
-    // Add 3 months to joining date
-    const leaveStartDate = moment(joiningDate).add(3, 'months');
-
-
-    // Check if future date is in the same year as current date
-    const isSameYear = leaveStartDate.year() === currentDate.year();
-
-    // If not in the same year, set to start of the current year
-    const adjustedDate = isSameYear ? leaveStartDate : moment().startOf('year');
-
-    // Format the adjusted date
-    const finalDate = adjustedDate.format("YYYY-MM-DD");
+    const futureDate = joiningDate.add(3, 'months');
+    const leaveStartDate = futureDate.format("YYYY-MM-DD")
     // Start of the current year
     const startOfYear = moment().clone().startOf('year').format('YYYY-MM-DD');
     // End of the current year
@@ -113,4 +99,3 @@ exports.checkJoiningDate = (joining_date) => {
 
     return monthsDiff;
 }
-
