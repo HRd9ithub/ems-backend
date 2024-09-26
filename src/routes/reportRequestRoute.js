@@ -17,12 +17,21 @@ const validation = [
     check("title", "Title is a required field.").notEmpty(),
     check("date", "Invalid Date format.Please enter the date in the format 'YYYY-MM-DD'.").isDate({ format: "YYYY-MM-DD" }),
     check("totalHours", "Total hours is a required field.").notEmpty(),
+    check("extraTotalHours", "Extra total hours is a required field.").notEmpty(),
     check('work', "Insert values ​​into the array.").isArray(),
     check('work.*.projectId', "Project is a required field.").notEmpty(),
     check('work.*.description', "Description is a required field.").notEmpty(),
     check('work.*.hours', "Working hours is a required field.").notEmpty().custom(async (totalHours, { req }) => {
         if (totalHours && (totalHours.toString() > 24 || totalHours.toString() < 0)) {
             throw new Error('Working hours range from 0 to 24 hours.')
+        }
+    }),
+    check('extraWork', "Extra work data Insert values ​​into the array.").isArray(),
+    check('extraWork.*.projectId', "Extra project is a required field.").notEmpty(),
+    check('extraWork.*.description', "Extra description is a required field.").notEmpty(),
+    check('extraWork.*.hours', "Extra working hours is a required field.").notEmpty().custom(async (totalHours, { req }) => {
+        if (totalHours && (totalHours.toString() > 24 || totalHours.toString() < 0)) {
+            throw new Error('Extra working hours range from 0 to 24 hours.')
         }
     })
 ]
@@ -39,10 +48,10 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(422).json({ error: [...new Set(err)], success: false })
         }
-        let { work, date, totalHours, title,wortReportId, extraWork } = req.body;
+        let { work, date, totalHours, title, wortReportId, extraWork, extraTotalHours } = req.body;
 
-        if(extraWork){
-            extraWork.projectId = extraWork.projectId || null;
+        if (work.length < 1 && extraWork.length < 1) {
+            return res.status(422).json({ error: ["Please add for work data or extra Work data, and try again."], success: false })
         }
 
         if (req.body.title === "Add Request") {
@@ -60,8 +69,9 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
             work,
             date,
             totalHours,
-            wortReportId : wortReportId && wortReportId,
-            extraWork
+            wortReportId: wortReportId && wortReportId,
+            extraWork,
+            extraTotalHours
         })
         const reportRequestDataResponse = await reportRequestData.save();
 
@@ -74,24 +84,57 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
                 }
             },
             {
-                $lookup: {
-                    from: "projects", localField: "extraWork.projectId", foreignField: "_id", as: "extraWorkData"
-                }
-            },
-            {
                 $unwind: {
-                    path: '$extraWorkData',
+                    path: '$extraWork',
                     preserveNullAndEmptyArrays: true
                 }
             },
             {
+                $lookup: {
+                    from: 'projects',
+                    localField: 'extraWork.projectId',
+                    foreignField: '_id',
+                    as: 'extraWork.project'
+                }
+            },
+            {
                 $unwind: {
-                    path: '$work'
+                    path: '$extraWork.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    extraWork: { $push: '$extraWork' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.extraWork': {
+                        $filter: {
+                            input: '$extraWork',
+                            as: 'ew',
+                            cond: { $ne: ['$$ew', {}] }
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            }, {
+                $unwind: {
+                    path: '$work',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
                 $lookup: {
-                    from: "projects", localField: "work.projectId", foreignField: "_id", as: "work.project"
+                    from: 'projects',
+                    localField: 'work.projectId',
+                    foreignField: '_id',
+                    as: 'work.project'
                 }
             },
             {
@@ -103,45 +146,47 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
             {
                 $group: {
                     _id: '$_id',
-                    _id: {
-                        userId: '$userId',
-                        createdAt: '$createdAt',
-                        updatedAt: '$updatedAt',
-                        totalHours: '$totalHours',
-                        date: '$date',
-                        _id: '$_id',
-                        extraWork: '$extraWork',
-                        extraWorkData: '$extraWorkData'
-                    },
-                    work: {
-                        $push: '$work'
+                    originalDocument: { $first: '$$ROOT' },
+                    work: { $push: '$work' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.work': {
+                        $filter: {
+                            input: '$work',
+                            as: 'w',
+                            cond: { $ne: ['$$w', {}] }  // This filters out empty objects from the array
+                        }
                     }
                 }
             },
             {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
                 $project: {
-                    userId: "$_id.userId",
-                    totalHours: "$_id.totalHours",
-                    date: "$_id.date",
+                    _id: 1,
+                    date: 1,
+                    userId: 1,
+                    totalHours: 1,
                     work: 1,
-                    updatedAt: "$_id.updatedAt",
-                    _id: "$_id._id",
-                    extraWork: "$_id.extraWork",
-                    extraWorkData: "$_id.extraWorkData",
+                    extraWork: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
                 }
             }
         ])
 
         if (workData.length !== 0) {
-        
-            const workResult = workData[0].work.map((val) => {
+
+            const workResult = workData[0].work?.map((val) => {
                 return { description: val.description, hours: val.hours, project: val.project?.name }
             });
 
-            let extraWork = workData[0].extraWork;
-            if(extraWork){
-                extraWork.projectName = workData[0].extraWorkData?.name;
-            }
+            let extraWork = workData[0].extraWork?.map((val) => {
+                return { description: val.description, hours: val.hours, project: val.project?.name }
+            });
 
             const contentData = {
                 timestamp: moment(req.body.date).format("DD MMM YYYY"),
@@ -149,7 +194,7 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
                 title: req.body.title,
                 work: workResult,
                 totalHours,
-                isAdmin : false,
+                isAdmin: false,
                 extraWork
             }
 
@@ -164,7 +209,7 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
             }
 
         }
-        return res.status(201).json({ success: true, message: "Your request has been sent successfully."})
+        return res.status(201).json({ success: true, message: "Your request has been sent successfully." })
 
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
@@ -173,7 +218,7 @@ ReportRequestRoute.post('/', Auth, validation, async (req, res) => {
 // delete reportRequestRoutes
 ReportRequestRoute.delete('/:id', async (req, res) => {
     try {
-        const reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({_id : req.params.id},{$set : {deleteAt: new Date()}});
+        const reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({ _id: req.params.id }, { $set: { deleteAt: new Date() } });
         if (reportRequestRoute) {
             return res.status(200).json({ success: true, message: "Request has been successfully deleted." })
         } else {
@@ -192,19 +237,19 @@ ReportRequestRoute.put('/:id', async (req, res) => {
 
         let reportRequestRoute = "";
 
-        if(status === "Read"){
-           reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({ _id: req.params.id }, { $set: { status: status } });
-        }else{
-            reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({ _id: req.params.id }, { $set: { status: status,deleteAt: new Date() } });
+        if (status === "Read") {
+            reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({ _id: req.params.id }, { $set: { status: status } });
+        } else {
+            reportRequestRoute = await ReportRequestSchema.findByIdAndUpdate({ _id: req.params.id }, { $set: { status: status, deleteAt: new Date() } });
 
-            if(reportRequestRoute){
-                const users = await user.findOne({ _id: reportRequestRoute.userId})
-    
+            if (reportRequestRoute) {
+                const users = await user.findOne({ _id: reportRequestRoute.userId })
+
                 await workReportMail(res, users.email, {
                     status: "Declined",
                     timestamp: moment(reportRequestRoute.date).format("DD MMM YYYY"),
                     name: users?.first_name.concat(" ", users.last_name),
-                    isAdmin :true
+                    isAdmin: true
                 });
             }
         }

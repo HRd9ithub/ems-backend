@@ -62,8 +62,8 @@
                     <table width="100%">
                         <tbody>
                             <tr>
-                                <td  style="border: none;" align="start">Total Working Days</td>
-                                <td  style="border: none;" align="end">
+                                <td style="border: none;" align="start">Total Working Days</td>
+                                <td style="border: none;" align="end">
                                     <%= summary.dayCount %>
                                 </td>
                             </tr>
@@ -74,8 +74,8 @@
                     <table width="100%">
                         <tbody>
                             <tr>
-                                <td  style="border: none;" align="start">Hours</td>
-                                <td  style="border: none;" align="end">
+                                <td style="border: none;" align="start">Hours</td>
+                                <td style="border: none;" align="end">
                                     <%= summary.totalHours %>
                                 </td>
                             </tr>
@@ -86,8 +86,8 @@
                     <table width="100%">
                         <tbody>
                             <tr>
-                                <td  style="border: none;" align="start">Extra Hours</td>
-                                <td  style="border: none;" align="end">
+                                <td style="border: none;" align="start">Extra Hours</td>
+                                <td style="border: none;" align="end">
                                     <%= summary.extraHours %>
                                 </td>
                             </tr>
@@ -98,8 +98,8 @@
                     <table width="100%">
                         <tbody>
                             <tr>
-                                <td  style="border: none;" align="start">Holiday</td>
-                                <td  style="border: none;" align="end">
+                                <td style="border: none;" align="start">Holiday</td>
+                                <td style="border: none;" align="end">
                                     <%= summary.holidayCount %>
                                 </td>
                             </tr>
@@ -110,8 +110,8 @@
                     <table width="100%">
                         <tbody>
                             <tr>
-                                <td  style="border: none;" align="start">Full Leave</td>
-                                <td  style="border: none;" align="end">
+                                <td style="border: none;" align="start">Full Leave</td>
+                                <td style="border: none;" align="end">
                                     <%= summary.fullLeave %>
                                 </td>
                             </tr>
@@ -122,8 +122,8 @@
                     <table width="100%">
                         <tbody>
                             <tr>
-                                <td  style="border: none;" align="start">Half Leave</td>
-                                <td  style="border: none;" align="end">
+                                <td style="border: none;" align="start">Half Leave</td>
+                                <td style="border: none;" align="end">
                                     <%= summary.halfLeave %>
                                 </td>
                             </tr>
@@ -158,34 +158,37 @@
                                 </td>
                                 <td style="width :15%; text-align: center;">
                                     <%= reports[i].userId && reports[i].totalHours %>
-                                    <% if(reports[i].leave_for) { %>
-                                        <span style="color: red;"> (<%= reports[i].leave_for %>)</span>
-                                    <% } %>
+                                        <% if(reports[i].leave_for) { %>
+                                            <span style="color: red;"> (<%= reports[i].leave_for %>)</span>
+                                            <% } %>
                                 </td>
                                 <td style="width: 15%; text-align: center;">
-                                    <%= (reports[i].extraWork && Object.keys(reports[i].extraWork).length !== 0) ? reports[i].extraWork.hours : "-" %>
+                                    <%= reports[i].extraTotalHours ? reports[i].extraTotalHours : "-" %>
                                 </td>
                                 <td>
-                                    <% for(let j=0;j<reports[i].work.length;j++) { %>
-                                        <p style="font-weight: bold;" className='mb-0'>
-                                            <%= j + 1 %>.
-                                                <%= reports[i].work[j].project?.name %>
-                                        </p>
-                                        <div className='w-100 text-wrap'>
-                                            <%- reports[i].work[j].description %>
-                                        </div>
-                                        <%} %>
-                                        <% if ( reports[i].extraWork && Object.keys( reports[i].extraWork).length !== 0) { %>
-                                            <div style="border-top: 1px solid #e0e0e0;">
-                                                <p style="font-weight: bold;color: #198ae3;" class="mb-0">Extra Work Detail:</p>
-                                                <p style="font-weight: bold;" class="mb-0">
-                                                    1. <%=  reports[i].extraWork.project?.name %>
-                                                </p>
-                                                <div class="w-100 text-wrap">
-                                                    <%-  reports[i].extraWork.description %>
-                                                </div>
+                                    <% if(reports[i].work?.length !==0) { %>
+                                        <% for(let j=0; j<reports[i].work.length; j++) { %>
+                                            <p style="font-weight: bold;" className='mb-0'>
+                                                <%= j + 1 %>. <%= reports[i].work[j].project?.name %>
+                                            </p>
+                                            <div className='w-100 text-wrap'>
+                                                <%- reports[i].work[j].description %>
                                             </div>
-                                        <% } %>
+                                            <%} %>
+                                                <% } %>
+                                                    <% if(reports[i].extraWork?.length !==0) { %>
+                                                        <% for(let j=0;j<reports[i].extraWork.length;j++) { %>
+                                                            <p style="font-weight: bold;color: #198ae3;" class="mb-0">
+                                                                Extra Work Detail:</p>
+                                                            <p style="font-weight: bold;" className='mb-0'>
+                                                                <%= j + 1 %>.
+                                                                    <%= reports[i].extraWork[j].project?.name %>
+                                                            </p>
+                                                            <div className='w-100 text-wrap'>
+                                                                <%- reports[i].extraWork[j].description %>
+                                                            </div>
+                                                            <%} %>
+                                                                <% } %>
                                 </td>
                                 <% } else { %>
                                     <td colspan="4" style="text-align: center; color: orange;">
