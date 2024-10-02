@@ -347,8 +347,8 @@ const getReport = async (req, res) => {
             return {
                 ...val,
                 user: {
-                    first_name: decryptData(val.user.first_name),
-                    last_name: decryptData(val.user.last_name),
+                    first_name: decryptData(val?.user?.first_name),
+                    last_name: decryptData(val?.user?.last_name),
                     status: val.user.status,
                 }
             }
