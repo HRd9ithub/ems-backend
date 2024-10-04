@@ -21,14 +21,18 @@ const passwordSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    },
     access_employee: {
         type: [
             { type: mongoose.Schema.Types.ObjectId }
         ],
         required: true
     },
-    isDelete : {
-        type : Boolean,
+    isDelete: {
+        type: Boolean,
         default: false
     }
 }, {
