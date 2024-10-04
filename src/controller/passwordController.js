@@ -3,6 +3,7 @@ const PasswordSchema = require("../models/passwordSchema");
 const { default: mongoose } = require("mongoose");
 const encryptData = require("../helper/encrptData");
 const decryptData = require("../helper/decryptData");
+const moment = require("moment");
 
 // create password function
 const createPassword = async (req, res) => {
@@ -22,7 +23,7 @@ const createPassword = async (req, res) => {
         let password = encryptData(req.body.password)
         let title = encryptData(req.body.title)
         let url = encryptData(req.body.url)
-        let note = encryptData(req.body.note)
+        let note = encryptData(req.body.note);
 
         let passwordData = new PasswordSchema({
             title: title,
@@ -30,7 +31,8 @@ const createPassword = async (req, res) => {
             note: note,
             user_name: user_name,
             password: password,
-            access_employee: req.body.access_employee
+            access_employee: req.body.access_employee,
+            createdBy: req.user._id
         });
         let response = await passwordData.save();
 
@@ -111,30 +113,57 @@ const getPassword = async (req, res) => {
             {
                 $match: {
                     isDelete: false,
-                    access_employee: permission.name.toLowerCase() === "admin" ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(_id) }
+                    $or: [
+                        { access_employee: permission.name.toLowerCase() === "admin" ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(_id) } },
+                        { createdBy: permission.name.toLowerCase() === "admin" ? { $ne: "" } : { $eq: new mongoose.Types.ObjectId(_id) } }
+                    ]
                 }
             },
             {
                 $lookup: {
-                    from: "users",
-                    localField: "access_employee",
-                    foreignField: "_id",
-                    as: "access"
+                    from: 'users',
+                    localField: 'createdBy',
+                    foreignField: '_id',
+                    pipeline: [
+                        {
+                            $project: {
+                                first_name: 1,
+                                last_name: 1
+                            }
+                        }
+                    ],
+                    as: 'created'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'access_employee',
+                    foreignField: '_id',
+                    pipeline: [
+                        {
+                            $project: {
+                                first_name: 1,
+                                last_name: 1
+                            }
+                        }
+                    ],
+                    as: 'access'
                 }
             },
             {
                 $project: {
-                    "title": 1,
-                    "url": 1,
-                    "user_name": 1,
-                    "password": 1,
-                    "note": 1,
-                    "access_employee": 1,
-                    "createdAt": 1,
-                    "updatedAt": 1,
-                    "access._id": 1,
-                    "access.first_name": 1,
-                    "access.last_name": 1,
+                    title: 1,
+                    url: 1,
+                    user_name: 1,
+                    password: 1,
+                    note: 1,
+                    access_employee: 1,
+                    access: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    createdBy: 1,
+                    created: { $arrayElemAt: ['$created', 0] }
                 }
             }
         ])
@@ -152,7 +181,13 @@ const getPassword = async (req, res) => {
                 updatedAt: item.updatedAt,
                 access: item.access.map((val) => {
                     return { ...val, first_name: decryptData(val.first_name), last_name: decryptData(val.last_name) }
-                })
+                }),
+                createdBy: item.createdBy,
+                created: {
+                    ...item.created,
+                    first_name: decryptData(item.created?.first_name || ""),
+                    last_name: decryptData(item.created?.last_name || ""),
+                }
             }
         })
 
