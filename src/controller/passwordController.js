@@ -23,7 +23,7 @@ const createPassword = async (req, res) => {
         let password = encryptData(req.body.password)
         let title = encryptData(req.body.title)
         let url = encryptData(req.body.url)
-        let note = encryptData(req.body.note);
+        let note = req.body.note ? encryptData(req.body.note) : null;
 
         let passwordData = new PasswordSchema({
             title: title,
@@ -61,7 +61,7 @@ const updatePassword = async (req, res) => {
         let password = encryptData(req.body.password)
         let title = encryptData(req.body.title)
         let url = encryptData(req.body.url)
-        let note = encryptData(req.body.note)
+        let note = req.body.note ? encryptData(req.body.note) : null;
 
         let response = await PasswordSchema.findByIdAndUpdate({ _id: id }, {
             $set: {
@@ -175,7 +175,7 @@ const getPassword = async (req, res) => {
                 url: decryptData(item.url),
                 user_name: decryptData(item.user_name),
                 password: decryptData(item.password),
-                note: decryptData(item.note),
+                note: item.note ? decryptData(item.note) : null,
                 access_employee: item.access_employee,
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt,
