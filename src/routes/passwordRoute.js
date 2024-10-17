@@ -10,22 +10,22 @@ let passwordValidation = [
     check("url", "Url is a required field.").notEmpty(),
     check("user_name", "User Name is a required field.").notEmpty(),
     check("password", "Password is a required field.").notEmpty(),
-    check("note", "Note is a required field.").notEmpty(),
+    // check("note", "Note is a required field.").notEmpty(),
     // check('access_employee', "Access employee Insert values ​​into the array.").isArray(),
 ]
 
 
 // add password
-passwordRoute.post("/",Auth,passwordPermission,passwordValidation,createPassword);
+passwordRoute.post("/", Auth, passwordPermission, passwordValidation, createPassword);
 
 // update password
-passwordRoute.put("/:id",Auth,passwordPermission,passwordValidation,updatePassword);
+passwordRoute.put("/:id", Auth, passwordPermission, passwordValidation, updatePassword);
 
 // delete password
-passwordRoute.delete("/:id",Auth,passwordPermission,deletePassword);
+passwordRoute.delete("/:id", Auth, passwordPermission, deletePassword);
 
 // get password
-passwordRoute.get("/",Auth,passwordPermission,getPassword);
+passwordRoute.get("/", Auth, passwordPermission, getPassword);
 
 
 
