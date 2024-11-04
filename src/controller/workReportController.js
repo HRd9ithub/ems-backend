@@ -930,4 +930,199 @@ const getWorkReportsByProject = async (req, res) => {
     }
 }
 
-module.exports = { createReport, getReport, updateReport, generatorPdf, downloadReport, getWorkReportsByProject }
+const getRequestReport = async (req, res) => {
+    try {
+        let { id, startDate, endDate } = req.query;
+        var a = moment(startDate, "YYYY-MM-DD");
+        var b = moment(endDate, "YYYY-MM-DD");
+        a.isValid();
+        if (!a.isValid() || !b.isValid()) {
+            return res.status(400).json({ message: "Please enter startDate and endDate.", success: false })
+        }
+
+        const identify = id || req.permissions?.name?.toLowerCase() !== "admin";
+
+        const workReports = await ReportRequestSchema.aggregate([
+            {
+                $match: {
+                    $and: [
+                        { date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                        { date: { $lte: moment(endDate).format("YYYY-MM-DD") } }
+                    ],
+                    userId: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) }
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWork',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'projects',
+                    localField: 'extraWork.projectId',
+                    foreignField: '_id',
+                    as: 'extraWork.project'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$extraWork.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    extraWork: { $push: '$extraWork' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.extraWork': {
+                        $filter: {
+                            input: '$extraWork',
+                            as: 'ew',
+                            cond: { $ne: ['$$ew', {}] }
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
+                $unwind: {
+                    path: '$work',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'projects',
+                    localField: 'work.projectId',
+                    foreignField: '_id',
+                    as: 'work.project'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$work.project',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    originalDocument: { $first: '$$ROOT' },
+                    work: { $push: '$work' }
+                }
+            },
+            {
+                $addFields: {
+                    'originalDocument.work': {
+                        $filter: {
+                            input: '$work',
+                            as: 'w',
+                            cond: { $ne: ['$$w', {}] }  // This filters out empty objects from the array
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: '$originalDocument' }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    let: { userId: '$userId' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ['$_id', '$$userId'] },
+                                delete_at: { $exists: false },
+                                joining_date: { $lte: new Date(moment(new Date()).format('YYYY-MM-DD')) },
+                                $or: [
+                                    { leaveing_date: { $eq: null } },
+                                    { leaveing_date: { $gt: new Date(moment(new Date()).format('YYYY-MM-DD')) } }
+                                ]
+                            }
+                        },
+                        { $project: { first_name: 1, last_name: 1, status: 1 } }
+                    ],
+                    as: 'user'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    date: 1,
+                    userId: 1,
+                    totalHours: 1,
+                    work: 1,
+                    extraWork: 1,
+                    user: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
+                    extraTotalHours: {
+                        $reduce: {
+                            input: "$extraWork",
+                            initialValue: 0,
+                            in: { $add: ["$$value", { $toDouble: "$$this.hours" }] }
+                        }
+                    },
+                    wortReportId: 1,
+                    title: 1,
+                    status: 1,
+                    deleteAt: 1
+                }
+            }
+        ]);
+
+        const result = workReports.map((val) => {
+            return {
+                ...val,
+                user: {
+                    first_name: decryptData(val?.user?.first_name),
+                    last_name: decryptData(val?.user?.last_name),
+                    status: val.user.status,
+                }
+            }
+        })
+
+        const record = result.filter((val) => {
+            return new Date(val.date) <= new Date(endDate) && new Date(val.date) >= new Date(startDate)
+        });
+
+        // Custom sorting function
+        function customSort(a, b) {
+            // First, compare dates
+            if (a.date < b.date) return -1;
+            if (a.date > b.date) return 1;
+
+            // If dates are equal, compare IDs
+            if (a.userId < b.userId) return -1;
+            if (a.userId > b.userId) return 1;
+
+            // If both dates and IDs are equal
+            return 0;
+        }
+
+        // Sort the array using the custom sorting function
+        record.sort(customSort);
+        return res.status(200).json({ success: true, message: "Successfully fetch a request report data.", data: record, permissions: req.permissions })
+
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+    }
+}
+
+module.exports = { createReport, getReport, updateReport, generatorPdf, downloadReport, getWorkReportsByProject, getRequestReport }
