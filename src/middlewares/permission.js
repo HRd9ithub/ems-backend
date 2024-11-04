@@ -247,7 +247,7 @@ const reportPermission = async (req, res, next) => {
 
         if (req.method === "POST" && req.route.path == "/") {
             permission.permissions.create !== 0 ? next() : res.status(403).json({ message: "You do not have permission to create work report." })
-        } else if (req.method === "GET" && req.route.path == "/") {
+        } else if (req.method === "GET" && (req.route.path == "/" || req.route.path == "/report-request-data")) {
             permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing work report to the work report Data. please contact admin.", permissions: req.permissions })
         } else if (req.method === "PATCH") {
             permission.permissions.update !== 0 ? next() : res.status(403).json({ message: "You do not have permission to update work report." })
@@ -267,7 +267,7 @@ const reportProjectPermission = async (req, res, next) => {
 
         if (req.method === "GET" && req.route.path == "/project-wise") {
             permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing work report to the work report Data. please contact admin.", permissions: req.permissions })
-        } 
+        }
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -306,10 +306,10 @@ const attendancePermission = async (req, res, next) => {
         } else if (req.method === "GET" && req.baseUrl == "/api/attendance") {
             if (req.method === "GET" && req.route.path == "/regulation/:id") {
                 permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to listing attendance to the attendance request Data. please contact admin." })
-            }else{
+            } else {
                 permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing attendance to the attendance Data. please contact admin." })
             }
-        }  else if (req.method === "PUT") {
+        } else if (req.method === "PUT") {
             permission.permissions.update !== 0 ? next() : res.status(403).json({ message: "You do not have permission to update attendance." })
         }
     } catch (error) {
@@ -387,7 +387,7 @@ const clientPermission = async (req, res, next) => {
 //     }
 // }
 
-module.exports = { 
+module.exports = {
     userPermission,
     passwordPermission,
     rolePermission,
