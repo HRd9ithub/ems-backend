@@ -25,11 +25,13 @@ const clockIn = async (req, res) => {
         const attendanceData = await attendance.findOne({ timestamp: moment(new Date()).format("YYYY-MM-DD"), userId: req.user._id })
 
         if (attendanceData) {
-            await attendance.findByIdAndUpdate({_id: attendanceData._id},{$push: {
-                time: {
-                    clock_in: req.body.clock_in
+            await attendance.findByIdAndUpdate({ _id: attendanceData._id }, {
+                $push: {
+                    time: {
+                        clock_in: req.body.clock_in
+                    }
                 }
-              }})
+            })
 
         } else {
             const data = {
@@ -73,7 +75,7 @@ const clockOut = async (req, res) => {
 
         const record = await attendance.findOne({ "time._id": id });
 
-        const data = record.time.find((val) =>{
+        const data = record.time.find((val) => {
             return val._id == id
         })
 
@@ -82,8 +84,9 @@ const clockOut = async (req, res) => {
 
         const attendanceData = await attendance.updateOne(
             { 'time._id': id },
-            { $set: { 'time.$.clock_out': req.body.clock_out, 'time.$.totalHours': req.body.totalHours } 
-        })
+            {
+                $set: { 'time.$.clock_out': req.body.clock_out, 'time.$.totalHours': req.body.totalHours }
+            })
 
         if (attendanceData) {
             return res.status(200).json({
@@ -163,6 +166,7 @@ const getAttendance = async (req, res) => {
             },
             {
                 $match: {
+                    "user.status": "Active",
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -242,7 +246,7 @@ const sendRegulationMail = async (req, res) => {
         await regulationMail(res, maillist, contentData);
 
         await Attendance_Regulation.create({
-            userId : req.user._id,
+            userId: req.user._id,
             clock_in: clockIn,
             clock_out: clockOut,
             explanation,
@@ -266,7 +270,7 @@ const getAttendanceRegulation = async (req, res) => {
                 $match: {
                     attendanceId: new mongoose.Types.ObjectId(id),
                     status: {
-                        $in:  ['Pending', "Read"]
+                        $in: ['Pending', "Read"]
                     }
                 }
             },
@@ -348,14 +352,15 @@ const addComment = async (req, res) => {
         const contentData = {
             isAdmin: false, status: status, comment, action_url: `${process.env.RESET_PASSWORD_URL}/attendance`
         }
-        if(status === "Approved"){
+        if (status === "Approved") {
             // generate total hours
             req.body.totalHours = moment.utc(moment(clock_out, "HH:mm:ss A").diff(moment(clock_in, "HH:mm:ss A"))).format("HH:mm")
-    
+
             const response = await attendance.updateOne(
                 { 'time._id': attendanceRegulationId },
-                { $set: { 'time.$.clock_in': clock_in, 'time.$.clock_out': clock_out, 'time.$.totalHours': req.body.totalHours } 
-            })
+                {
+                    $set: { 'time.$.clock_in': clock_in, 'time.$.clock_out': clock_out, 'time.$.totalHours': req.body.totalHours }
+                })
         }
         const userData = await user.findOne({ _id: userId }, { email: 1 })
         await regulationMail(res, userData.email, contentData);
