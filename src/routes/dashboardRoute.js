@@ -51,7 +51,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
         const inActiveEmployee = await user.aggregate([
             {
                 $match: {
-                    status:{ $ne:  "Active"},
+                    status: { $ne: "Active" },
                     delete_at: { $exists: false },
                     joining_date: { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -104,7 +104,7 @@ DashboardRoute.get('/', Auth, async (req, res) => {
             },
             {
                 $match: {
-                    // "user.status": "Active",
+                    "user.status": "Active",
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -167,32 +167,37 @@ DashboardRoute.get('/', Auth, async (req, res) => {
                 },
                 leave_for: { $nin: ["Half", "First Half", "Second Half"] },
                 deleteAt: { $exists: false }
-            }
+            },
         },
         {
             $lookup: {
-                from: "users", localField: "user_id", foreignField: "_id", as: "user"
+                from: 'users',
+                let: { user_id: '$user_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ['$_id', '$$user_id'] },
+                            delete_at: { $exists: false },
+                            status: "Active",
+                            joining_date: { $lte: new Date(moment(new Date()).format('YYYY-MM-DD')) },
+                            $or: [
+                                { leaveing_date: { $eq: null } },
+                                { leaveing_date: { $gt: new Date(moment(new Date()).format('YYYY-MM-DD')) } }
+                            ]
+                        }
+                    },
+                    { $project: { first_name: 1, last_name: 1, status: 1, employee_id: 1, profile_image: 1 } }
+                ],
+                as: 'user'
             }
         },
-        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-        {
-            $match: {
-                // "user.status": "Active",
-                "user.delete_at": { $exists: false },
-                "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
-                $or: [
-                    { "user.leaveing_date": { $eq: null } },
-                    { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
-                ]
-            }
-        },
+        { $unwind: { path: "$user" } },
         {
             $project: {
                 user_id: 1,
-                "user.employee_id": 1,
-                "user.first_name": 1,
-                "user.last_name": 1,
-                "user.profile_image": 1,
+                user: 1,
+                from_date: 1,
+                to_date: 1
             }
         },
         ])
@@ -213,29 +218,34 @@ DashboardRoute.get('/', Auth, async (req, res) => {
         },
         {
             $lookup: {
-                from: "users", localField: "user_id", foreignField: "_id", as: "user"
+                from: 'users',
+                let: { user_id: '$user_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ['$_id', '$$user_id'] },
+                            delete_at: { $exists: false },
+                            status: "Active",
+                            joining_date: { $lte: new Date(moment(new Date()).format('YYYY-MM-DD')) },
+                            $or: [
+                                { leaveing_date: { $eq: null } },
+                                { leaveing_date: { $gt: new Date(moment(new Date()).format('YYYY-MM-DD')) } }
+                            ]
+                        }
+                    },
+                    { $project: { first_name: 1, last_name: 1, status: 1, employee_id: 1, profile_image: 1 } }
+                ],
+                as: 'user'
             }
         },
-        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-        {
-            $match: {
-                // "user.status": "Active",
-                "user.delete_at": { $exists: false },
-                "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
-                $or: [
-                    { "user.leaveing_date": { $eq: null } },
-                    { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
-                ]
-            }
-        },
+        { $unwind: { path: "$user" } },
         {
             $project: {
                 user_id: 1,
-                "user.employee_id": 1,
-                "user.first_name": 1,
-                "user.last_name": 1,
-                "user.profile_image": 1,
-                "leave_for": 1
+                user: 1,
+                "leave_for": 1,
+                from_date: 1,
+                to_date: 1
             }
         },
         ])
