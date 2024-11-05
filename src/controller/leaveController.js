@@ -125,8 +125,8 @@ const getLeave = async (req, res) => {
                 $match: {
                     user_id: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) },
                     // $and: [
-                    //     { from_date: { $gte: moment(startDate).format("YYYY-MM-DD") } },
-                    //     { to_date: { $lte: moment(endDate).format("YYYY-MM-DD") } }
+                    //     { from_date: { $lte: moment(startDate).format("YYYY-MM-DD") } },
+                    //     { to_date: { $gte: moment(endDate).format("YYYY-MM-DD") } }
                     // ],
                     $or: [
                         {
@@ -165,7 +165,7 @@ const getLeave = async (req, res) => {
             },
             {
                 $match: {
-                    // "user.status": "Active",
+                    "user.status": "Active",
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -461,7 +461,7 @@ const getNotifications = async (req, res) => {
             },
             {
                 $match: {
-                    // "user.status": "Active",
+                    "user.status": "Active",
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -604,7 +604,7 @@ const getNotifications = async (req, res) => {
             { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
             {
                 $match: {
-                    // "user.status": "Active",
+                    "user.status": "Active",
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -768,7 +768,7 @@ const getAllNotifications = async (req, res) => {
             },
             {
                 $match: {
-                    // "user.status": "Active",
+                    "user.status": "Active",
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
@@ -912,7 +912,7 @@ const getAllNotifications = async (req, res) => {
             { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
             {
                 $match: {
-                    // "user.status": "Active",
+                    "user.status": "Active",
                     "user.delete_at": { $exists: false },
                     "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
                     $or: [
