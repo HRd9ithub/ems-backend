@@ -23,16 +23,16 @@ const documentUpload = multer({
 const uploadSingleImage = documentUpload.fields([
     { name: 'resume' },
     { name: 'offer_letter' },
-    { name: 'joining_letter' },
+    { name: 'pan_card' },
     { name: 'other' },
     { name: 'photo' },
-    { name: 'id_proof' },
+    { name: 'aadhar_card' },
 ]);
 const importDocument = documentUpload.single("image");
 
 const attchmentFile = documentUpload.fields([
-    { name: 'image'},
-    { name: 'businessLogo', maxCount: 1}
+    { name: 'image' },
+    { name: 'businessLogo', maxCount: 1 }
 ])
 
-module.exports = { uploadSingleImage, importDocument,attchmentFile }
+module.exports = { uploadSingleImage, importDocument, attchmentFile }

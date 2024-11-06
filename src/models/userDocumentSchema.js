@@ -2,34 +2,32 @@ const mongoose = require('mongoose');
 
 // document structure define 
 const user_documentSchema = new mongoose.Schema({
-    photo :{ 
-        type: String,
-        required : true
-    },
-    id_proof :{ 
-        type: String,
-        required : true
-    },
-    resume :{ 
+    photo: {
         type: String
     },
-    offer_letter :{ 
+    aadhar_card: {
         type: String
     },
-    joining_letter :{ 
+    resume: {
         type: String
     },
-    other :{ 
+    offer_letter: {
         type: String
     },
-    user_id:{
+    pan_card: {
+        type: String
+    },
+    other: {
+        type: String
+    },
+    user_id: {
         type: mongoose.Schema.Types.ObjectId,
-        required:true
+        required: true
     }
 },
-{
-    timestamps :true
-}
+    {
+        timestamps: true
+    }
 )
 
 
