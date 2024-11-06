@@ -17,10 +17,10 @@ userDocumentRoute.post('/', Auth, function (req, res) {
 
         let resume = file && file.resume && file.resume[0].filename
         let offer_letter = file && file.offer_letter && file.offer_letter[0].filename
-        let joining_letter = file && file.joining_letter && file.joining_letter[0].filename
+        let pan_card = file && file.pan_card && file.pan_card[0].filename
         let other = file && file.other && file.other[0].filename
         let photo = file && file.photo && file.photo[0].filename
-        let id_proof = file && file.id_proof && file.id_proof[0].filename
+        let aadhar_card = file && file.aadhar_card && file.aadhar_card[0].filename
 
         try {
             // check data exist or not
@@ -29,7 +29,7 @@ userDocumentRoute.post('/', Auth, function (req, res) {
             let roleData = await role.findOne({ _id: req.user.role_id });
 
             if (data) {
-                let response = await user_document.findByIdAndUpdate({ _id: data._id }, { photo,id_proof,resume, joining_letter, offer_letter, other });
+                let response = await user_document.findByIdAndUpdate({ _id: data._id }, { photo, aadhar_card, resume, pan_card, offer_letter, other });
                 if (response) {
                     if (roleData.name.toLowerCase() !== "admin") {
                         createActivity(req.user._id, "User document detail updated by");
@@ -39,7 +39,7 @@ userDocumentRoute.post('/', Auth, function (req, res) {
                     return res.status(404).json({ success: false, message: "Record Not found." })
                 }
             } else {
-                const documentData = new user_document({ photo,id_proof, resume, joining_letter, offer_letter, other, user_id: req.body.user_id });
+                const documentData = new user_document({ photo, pan_card, resume, aadhar_card, offer_letter, other, user_id: req.body.user_id });
                 const response = await documentData.save();
                 if (roleData.name.toLowerCase() !== "admin") {
                     createActivity(req.user._id, "User document detail added by");
