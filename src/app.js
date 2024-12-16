@@ -38,11 +38,11 @@ const connectDB = require("./DB/connection");
 const app = express();
 
 const port = process.env.PORT || 8000
-console.log(process.env.RESET_PASSWORD_URL);
+
 app.use(cors({
    "origin": process.env.RESET_PASSWORD_URL,
    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-   "preflightContinue": true,
+   "preflightContinue": false,
    "optionsSuccessStatus": 204
  }));
 
