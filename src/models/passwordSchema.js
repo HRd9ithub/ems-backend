@@ -30,6 +30,12 @@ const passwordSchema = new mongoose.Schema({
         ],
         required: true
     },
+    file: {
+        type: {
+            name: String,
+            pathName: String
+        }
+    },
     isDelete: {
         type: Boolean,
         default: false

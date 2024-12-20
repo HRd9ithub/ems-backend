@@ -293,6 +293,26 @@ const passwordPermission = async (req, res, next) => {
         return res.status(500).json({ message: error.message })
     }
 }
+// * ================== note route check permission =========================
+const notePermission = async (req, res, next) => {
+    try {
+        let permission = await getRoleData(req.user.role_id, "note");
+
+        req.permissions = permission;
+
+        if (req.method === "POST" && req.baseUrl == "/api/note") {
+            permission.permissions.create !== 0 ? next() : res.status(403).json({ message: "You do not have permission to create note." })
+        } else if (req.method === "GET" && req.baseUrl == "/api/note") {
+            permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing note to the note Data. please contact admin." })
+        } else if (req.method === "PUT") {
+            permission.permissions.update !== 0 ? next() : res.status(403).json({ message: "You do not have permission to update note." })
+        } else if (req.method === "DELETE") {
+            permission.permissions.delete !== 0 ? next() : res.status(403).json({ message: "You do not have permission to delete note." })
+        }
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
 
 // * ================== attendance route check permission =========================
 const attendancePermission = async (req, res, next) => {
@@ -403,5 +423,6 @@ module.exports = {
     leaveTypePermission,
     holidayPermission,
     notificationPermission,
-    reportProjectPermission
+    reportProjectPermission,
+    notePermission
 }
