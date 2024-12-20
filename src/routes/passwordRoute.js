@@ -3,6 +3,7 @@ const Auth = require("../middlewares/authtication");
 const { createPassword, getPassword, updatePassword, deletePassword } = require("../controller/passwordController");
 const { check } = require("express-validator");
 const { passwordPermission } = require("../middlewares/permission");
+const passwordFileUpload = require("../middlewares/passwordFileUpload");
 let passwordRoute = express.Router();
 
 let passwordValidation = [
@@ -16,10 +17,10 @@ let passwordValidation = [
 
 
 // add password
-passwordRoute.post("/", Auth, passwordPermission, passwordValidation, createPassword);
+passwordRoute.post("/", Auth, passwordPermission, passwordFileUpload, passwordValidation, createPassword);
 
 // update password
-passwordRoute.put("/:id", Auth, passwordPermission, passwordValidation, updatePassword);
+passwordRoute.put("/:id", Auth, passwordPermission, passwordFileUpload, passwordValidation, updatePassword);
 
 // delete password
 passwordRoute.delete("/:id", Auth, passwordPermission, deletePassword);
