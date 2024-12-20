@@ -30,6 +30,7 @@ const invoiceClientRoute = require('./routes/invoiceClientRoute');
 const invoiceAccountRoute = require('./routes/invoiceAccountRoute');
 const leaveSettingRoute = require('./routes/leaveSettingRoute');
 const chatBotRoute = require('./routes/chatBotRoute');
+const noteRoute = require('./routes/noteRoute');
 
 const sendBirthdayMail = require('./cron-job');
 // add database
@@ -44,7 +45,7 @@ app.use(cors({
    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
    "preflightContinue": false,
    "optionsSuccessStatus": 204
- }));
+}));
 
 app.use(bodyParser.json())
 
@@ -53,11 +54,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(express.json());
 
-// image get route
-app.use('/uploads', express.static(path.resolve('./public/images')))
-app.use('/uploads', express.static(path.join(__dirname, '../public/document')))
-app.use('/uploads', express.static(path.join(__dirname, '../public')));
-
+// image get routeapp.use('/uploads', [
+app.use("/uploads/", [
+   express.static(path.resolve('./public/images')),
+   express.static(path.join(__dirname, '../public/document')),
+   express.static(path.join(__dirname, '../public'))
+]);
 // swagger route
 app.use("/api-docs", swaggerServe, swaggerSetup);
 
@@ -88,6 +90,7 @@ app.use('/api/invoice/account', invoiceAccountRoute)
 app.use('/api/invoice', invoiceRoute)
 app.use('/api/leave-setting', leaveSettingRoute);
 app.use('/api/geminiRoute', chatBotRoute);
+app.use('/api/note', noteRoute);
 
 app.all("*", (req, res, next) => {
    let err = new Error(`Can't find ${req.originalUrl} on the server.`);
@@ -98,14 +101,14 @@ app.all("*", (req, res, next) => {
 
 //An error handling middleware
 app.use(function (err, req, res, next) {
-   res.status(err.statusCode);
-   res.json({ message: err.message, statusCode: err.statusCode })
+   res.status(err?.statusCode || 500);
+   res.json({ message: err.message, statusCode: err?.statusCode || 500 })
 });
 
 connectDB().then(() => {
    app.listen(port, () => {
       console.log(`Server is running for ${port}.`)
-  })
+   })
 }).catch((error) => {
    console.log(error.message);
 })

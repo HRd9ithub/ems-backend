@@ -1,7 +1,8 @@
 # floder ignore
 uploads/
-public/images/image*
-public/document/file*
+public/images/*
+public/document/*
+public/password/*
 
 # Logs
 logs
