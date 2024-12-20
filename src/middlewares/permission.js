@@ -296,7 +296,7 @@ const passwordPermission = async (req, res, next) => {
 // * ================== note route check permission =========================
 const notePermission = async (req, res, next) => {
     try {
-        let permission = await getRoleData(req.user.role_id, "note");
+        let permission = await getRoleData(req.user.role_id, "notes");
 
         req.permissions = permission;
 
