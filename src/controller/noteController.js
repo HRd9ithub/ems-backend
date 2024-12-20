@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator")
 const noteSchema = require("../models/noteSchema");
 const encryptData = require("../helper/encrptData");
 const decryptData = require("../helper/decryptData");
+const { default: mongoose } = require("mongoose");
 
 //*  create note function
 const createNote = async (req, res) => {
@@ -169,7 +170,6 @@ const getNotes = async (req, res) => {
     return res.status(200).json({ success: true, data: updatedNotes, permissions });
 
   } catch (err) {
-    console.log('err: ', err)
     return res.status(500).json({ message: err.message || 'Internal Server Error', success: false, });
   }
 };
