@@ -84,7 +84,14 @@ const sendBirthdayMail = async () => {
                     from: from,
                     to: adminMail,
                     subject: "Birthday Announcement",
-                    html: content
+                    html: content,
+                    attachments: [
+                        {
+                            filename: 'd9_logo_black.png',
+                            path: path.join(__dirname, "../../public/d9_logo_black.png"),
+                            cid: 'fixedImage',
+                        },
+                    ],
                 };
 
                 transporter.sendMail(mailOptions, (error, info) => {

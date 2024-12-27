@@ -2,7 +2,7 @@ let express = require("express");
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
 const { notePermission } = require("../middlewares/permission");
-const { createNote, updateNote, getNotes, deleteNote } = require("../controller/noteController");
+const { createNote, updateNote, getNotes, deleteNote, getSingleNote } = require("../controller/noteController");
 
 let noteRoute = express.Router();
 
@@ -20,6 +20,9 @@ noteRoute.put("/:id", Auth, notePermission, noteValidation, updateNote);
 
 //? get note
 noteRoute.get("/", Auth, notePermission, getNotes);
+
+//? get single note
+noteRoute.get("/:id", Auth, notePermission, getSingleNote);
 
 //? delete note
 noteRoute.delete("/:id", Auth, notePermission, deleteNote);

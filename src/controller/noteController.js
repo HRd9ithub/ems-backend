@@ -174,6 +174,76 @@ const getNotes = async (req, res) => {
   }
 };
 
+//* single get note function
+const getSingleNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { permissions } = req;
+
+    const filter = {
+      _id: new mongoose.Types.ObjectId(id),
+      deletedAt: { $exists: false }
+    };
+
+    const response = await noteSchema.aggregate([
+      {
+        $match: filter
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'access_employee',
+          foreignField: '_id',
+          pipeline: [
+            {
+              $project: {
+                first_name: 1,
+                last_name: 1
+              }
+            }
+          ],
+          as: 'access'
+        }
+      },
+      {
+        $project: {
+          title: 1,
+          note: 1,
+          access_employee: 1,
+          access: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          createdBy: 1,
+        }
+      }
+    ])
+
+    if (response.length !== 0) {
+      const updatedNote = response.map((item) => {
+        return {
+          _id: item._id,
+          title: decryptData(item.title),
+          note: item.note ? decryptData(item.note) : null,
+          access_employee: item.access_employee,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          access: item.access.map((val) => {
+            return { ...val, first_name: decryptData(val.first_name), last_name: decryptData(val.last_name) }
+          }),
+          createdBy: item.createdBy
+        }
+      })
+
+      return res.status(200).json({ success: true, message: "Data fetched successfully.", data: updatedNote[0], permissions })
+    } else {
+      return res.status(404).json({ success: false, message: "Record Not Found." })
+    }
+
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+  }
+}
+
 //* delete note function
 const deleteNote = async (req, res) => {
   try {
@@ -195,5 +265,6 @@ module.exports = {
   createNote,
   updateNote,
   getNotes,
-  deleteNote
+  deleteNote,
+  getSingleNote
 }
