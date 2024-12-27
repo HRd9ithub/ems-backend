@@ -40,7 +40,7 @@ const createPassword = async (req, res) => {
             note: note,
             user_name: user_name,
             password: password,
-            access_employee: req.body.access_employee !== "undefined" ? req.body.access_employee : [],
+            access_employee: req.body.access_employee !== "undefined" ? req.body.access_employee.split(',') : [],
             createdBy: req.user._id,
             file
         });
@@ -103,7 +103,7 @@ const updatePassword = async (req, res) => {
             {
                 $set: {
                     ...encryptedData,
-                    access_employee: req.body.access_employee,
+                    access_employee: req.body.access_employee ? req.body.access_employee.split(',') : [],
                     file: req.file ? file : undefined
                 }
             },

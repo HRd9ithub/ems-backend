@@ -31,7 +31,14 @@ const forgetEmail = async (res, email, mailsubject, url) => {
             from: from,
             to: email,
             subject: mailsubject,
-            html: content
+            html: content,
+            attachments: [
+                {
+                    filename: 'd9_logo_black.png',
+                    path: path.join(__dirname, "../../public/d9_logo_black.png"),
+                    cid: 'fixedImage',
+                },
+            ],
         };
 
         let mailSend = await transporter.sendMail(mailOptions)

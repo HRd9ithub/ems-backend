@@ -28,11 +28,19 @@ const sendOtpMail = async (res, email, mailsubject, otp) => {
 
 
         let from = `D9ithub <${SMTP_EMAIL}>`
+
         var mailOptions = {
             from: from,
             to: email,
             subject: mailsubject,
-            html: content
+            html: content,
+            attachments: [
+                {
+                    filename: 'd9_logo_black.png',
+                    path: path.join(__dirname, "../../public/d9_logo_black.png"),
+                    cid: 'fixedImage',
+                },
+            ],
         };
 
         let mailSend = await transporter.sendMail(mailOptions)

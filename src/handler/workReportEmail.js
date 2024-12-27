@@ -31,9 +31,16 @@ const workReportMail = async (res, maillist, contentData) => {
         from: from,
         to: maillist,
         subject: typeof maillist === "object" ? "Work Report Request" : "Work Report Request Status",
-        html: content
+        html: content,
+        attachments: [
+            {
+                filename: 'd9_logo_black.png',
+                path: path.join(__dirname, "../../public/d9_logo_black.png"),
+                cid: 'fixedImage',
+            },
+        ],
     };
-    await transporter.sendMail(mailOptions);  
+    await transporter.sendMail(mailOptions);
 
 }
 

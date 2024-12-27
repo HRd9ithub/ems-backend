@@ -1,5 +1,6 @@
 const multer = require("multer");
 const path = require("path");
+const { v4: uuidv4 } = require('uuid');
 
 const storage = multer.diskStorage({
     destination: path.join(__dirname, "../../public/document"),
@@ -11,7 +12,7 @@ const storage = multer.diskStorage({
 const documentUpload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
-        var ext = path.extname(file.originalname)
+        var ext = path.extname(file.originalname).toLowerCase()
         if (ext === '.png' || ext === '.jpg' || ext === '.svg' || ext === '.jpeg' || ext === '.pdf' || ext === '.doc' || ext === '.csv') {
             cb(null, true);
         } else {

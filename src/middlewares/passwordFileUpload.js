@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
 const passwordFileUpload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    var ext = path.extname(file.originalname)
+    var ext = path.extname(file.originalname).toLowerCase()
     if (ext === '.png' || ext === '.jpg' || ext === '.svg' || ext === '.jpeg' || ext === '.pdf' || ext === '.doc' || ext === '.csv' || ext === '.ppk' || ext === '.pem') {
       cb(null, true);
     } else {
