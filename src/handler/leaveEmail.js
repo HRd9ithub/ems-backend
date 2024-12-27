@@ -19,7 +19,14 @@ const leaveEmail = async (res, mailsubject, email, content) => {
         from: from,
         to: email,
         subject: mailsubject,
-        html: content
+        html: content,
+        attachments: [
+            {
+                filename: 'd9_logo_black.png',
+                path: path.join(__dirname, "../../public/d9_logo_black.png"),
+                cid: 'fixedImage',
+            },
+        ],
     };
     await transporter.sendMail(mailOptions);
 }
