@@ -101,6 +101,117 @@ const addLeave = async (req, res) => {
 }
 
 // get leave
+const GetLeaveReport = async (req, res) => {
+    let { id, startDate, endDate } = req.query;
+    try {
+        // date validation
+        var a = moment(startDate, "YYYY-MM-DD");
+        var b = moment(endDate, "YYYY-MM-DD");
+        a.isValid();
+        if (!a.isValid() || !b.isValid()) {
+            return res.status(400).json({ message: "Please enter startDate and endDate.", success: false })
+        }
+        let identify = id || req.permissions.name.toLowerCase() !== "admin";
+
+        // get data for leave
+        let leaveData = await Leave.aggregate([
+            {
+                $match: {
+                    user_id: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(id || req.user._id) },
+                    $or: [
+                        {
+                            $and: [
+                                { 'from_date': { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                                { 'from_date': { $lte: moment(endDate).format("YYYY-MM-DD") } },
+                            ]
+                        },
+                        {
+                            $and: [
+                                { 'to_date': { $gte: moment(startDate).format("YYYY-MM-DD") } },
+                                { 'to_date': { $lte: moment(endDate).format("YYYY-MM-DD") } },
+                            ]
+                        }
+                    ],
+                    deleteAt: { $exists: false }
+                }
+            },
+            {
+                $lookup:
+                {
+                    from: "users",
+                    localField: "user_id",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $unwind:
+                {
+                    path: "$user",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $match: {
+                    "user.status": "Active",
+                    "user.delete_at": { $exists: false },
+                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { "user.leaveing_date": { $eq: null } },
+                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+            },
+            {
+                $lookup:
+                {
+                    from: "leavetypes",
+                    localField: "leave_type_id",
+                    foreignField: "_id",
+                    as: "leaveType"
+                }
+            },
+            {
+                $project: {
+                    "user_id": 1,
+                    "leave_type_id": 1,
+                    "from_date": 1,
+                    "to_date": 1,
+                    "leave_for": 1,
+                    "duration": 1,
+                    "reason": 1,
+                    "status": 1,
+                    "createdAt": 1,
+                    "leaveType": { $first: "$leaveType.name" },
+                    "user.employee_id": 1,
+                    "user.profile_image": 1,
+                    "user.first_name": 1,
+                    "user.last_name": 1,
+                    "user.status": 1,
+                }
+            }
+        ]);
+
+
+        // data decrypt 
+        let result = leaveData.map((val) => {
+            return {
+                ...val,
+                user: {
+                    first_name: decryptData(val.user.first_name),
+                    last_name: decryptData(val.user.last_name),
+                    status: val.user.status,
+                }
+            }
+        })
+
+        return res.status(200).json({ message: "Leave report data fetch successfully.", success: true, data: result, permissions: req.permissions })
+    } catch (error) {
+        return res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+    }
+}
+
+// get leave
 const getLeave = async (req, res) => {
     let { id, startDate, endDate, status, leave_for } = req.query;
     try {
@@ -221,7 +332,7 @@ const getLeave = async (req, res) => {
 
         let calData = [];
         // Check if the difference is greater than or equal to 3
-        if (req.permissions.name.toLowerCase() !== "admin" && monthsDiff >= 3) {
+        if (req.permissions.name.toLowerCase() !== "admin") {
             const leaveSettingData = await leave_setting.aggregate([
                 {
                     $match: {
@@ -1012,4 +1123,4 @@ const getAllNotifications = async (req, res) => {
     }
 }
 
-module.exports = { addLeave, getLeave, singleGetLeave, updateLeave, deleteLeave, changeStatus, notificationDelete, getNotifications, getAllNotifications }
+module.exports = { GetLeaveReport, addLeave, getLeave, singleGetLeave, updateLeave, deleteLeave, changeStatus, notificationDelete, getNotifications, getAllNotifications }

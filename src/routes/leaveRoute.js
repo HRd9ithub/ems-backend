@@ -2,8 +2,8 @@ const { Router } = require('express');
 const leaveRouter = Router();
 const Auth = require('../middlewares/authtication');
 const { body } = require('express-validator');
-const { addLeave, getLeave, singleGetLeave, updateLeave, changeStatus, getNotifications, deleteLeave, notificationDelete, getAllNotifications } = require('../controller/leaveController');
-const { leavePermission, notificationPermission } = require('../middlewares/permission');
+const { addLeave, getLeave, singleGetLeave, updateLeave, changeStatus, getNotifications, deleteLeave, notificationDelete, getAllNotifications, GetLeaveReport } = require('../controller/leaveController');
+const { leavePermission, notificationPermission, leaveReportPermission } = require('../middlewares/permission');
 
 // Get all leave
 leaveRouter.get('/', Auth, leavePermission, getLeave)
@@ -17,7 +17,10 @@ leaveRouter.post('/', Auth, leavePermission, [
     body('leave_for', "Invalid leave status. Please enter the leave status value for Full or First Half or Second Half.").isIn(['Full', 'First Half', 'Second Half']),
     body('reason', "Reason field is Required.").notEmpty(),
     body('status', "Status field is Required.").isIn(['Pending', 'Approved', "Declined"])
-], addLeave)
+], addLeave);
+
+// Get leave By ID
+leaveRouter.get('/report', Auth, leaveReportPermission, GetLeaveReport)
 
 // Get leave By ID
 leaveRouter.get('/:id', Auth, singleGetLeave)

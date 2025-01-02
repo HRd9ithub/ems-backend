@@ -14,6 +14,7 @@ const reportDownloadSchema = require("../models/reportDownloadSchema");
 const { default: puppeteer } = require("puppeteer");
 const workReportMail = require("../handler/workReportEmail");
 const ReportRequestSchema = require("../models/reportRequestSchema");
+const html_to_pdf = require('html-pdf-node');
 
 const createReport = async (req, res) => {
     try {
@@ -710,24 +711,12 @@ const downloadReport = async (req, res) => {
         const filepath = path.resolve(__dirname, "../../views/workReport.ejs");
 
         // read file using fs module
-        const htmlstring = fs.readFileSync(filepath).toString();
+        const htmlString = fs.readFileSync(filepath).toString();
         // add data dynamic
-        const htmlContent = ejs.render(htmlstring, ejsData);
+        const htmlContent = ejs.render(htmlString, ejsData);
 
-        // Launch a headless browser using puppeteer
-        const browser = await puppeteer.launch({
-            args: ['--no-sandbox'],
-            timeout: 10000,
-        });
-        const page = await browser.newPage();
-
-        // Set the content and styles for the PDF
-        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
-
-        // Generate the PDF
-        const pdfBuffer = await page.pdf({
+        const options = {
             format: 'A4',
-            displayHeaderFooter: false, // Set to false to remove the duplicate head
             margin: {
                 top: '20px',
                 bottom: '20px',
@@ -735,22 +724,21 @@ const downloadReport = async (req, res) => {
                 right: '20px',
             },
             printBackground: true,
-        });
+            args: ['--no-sandbox']
+        };
 
-        // Close the browser
-        await browser.close();
+        const file = { content: htmlContent };
 
         // Send the generated PDF as a downloadable file
         const pdfFileName = '../../public/work-report.pdf';
         const pdfPath = path.join(__dirname, pdfFileName);
-        // Save the PDF to a file
-        fs.writeFileSync(pdfPath, pdfBuffer);
 
-        // * get file path
-        // let filepath = path.resolve(__dirname, `../../public/document/${id.concat(".", "pdf")}`);
-
-        // response send for frontend
-        res.download(pdfPath)
+        html_to_pdf.generatePdf(file, options).then(pdfBuffer => {
+            fs.writeFileSync(pdfPath, pdfBuffer);
+            return res.download(pdfPath);
+        }).catch(error => {
+            return res.status(500).json({ message: error.message || 'Internal server Error', success: false, stack: error.stack })
+        });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
     }
