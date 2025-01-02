@@ -1,5 +1,6 @@
 const holiday = require("../models/holidaySchema");
 const expressValidator = require("express-validator");
+const moment = require("moment");
 
 // create holiday function
 const createHoliday = async (req, res) => {
@@ -66,11 +67,24 @@ const deleteHoliday = async (req, res) => {
 
 // get holiday function
 const getHoliday = async (req, res) => {
+    let { startDate, endDate } = req.query;
     try {
+        // date validation
+        var a = moment(startDate, "YYYY-MM-DD");
+        var b = moment(endDate, "YYYY-MM-DD");
+        a.isValid();
+        if (!a.isValid() || !b.isValid()) {
+            return res.status(400).json({ message: "Please enter startDate and endDate.", success: false })
+        }
         // get holiday data in database
-        const data = await holiday.find()
+        const data = await holiday.find({
+            date: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        })
 
-        return res.status(200).json({ success: true, message: "Successfully fetch a holiday data.", data: data,permissions: req.permissions })
+        return res.status(200).json({ success: true, message: "Successfully fetch a holiday data.", data: data, permissions: req.permissions })
 
     } catch (error) {
         res.status(500).json({ message: error.message || 'Internal server Error', success: false })
