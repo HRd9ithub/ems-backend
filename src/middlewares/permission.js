@@ -145,6 +145,19 @@ const leavePermission = async (req, res, next) => {
         return res.status(500).json({ message: error.message })
     }
 }
+const leaveReportPermission = async (req, res, next) => {
+    try {
+        let permission = await getRoleData(req.user.role_id, "leave report");
+
+        req.permissions = permission;
+
+        if (req.method === "GET" && req.route.path == "/report") {
+            permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing leave report to the leave Data. please contact admin." })
+        }
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
 const notificationPermission = async (req, res, next) => {
     try {
         let permission = await getRoleData(req.user.role_id, "notification");
@@ -313,6 +326,26 @@ const notePermission = async (req, res, next) => {
         return res.status(500).json({ message: error.message })
     }
 }
+// * ================== rule route check permission =========================
+const rulePermission = async (req, res, next) => {
+    try {
+        let permission = await getRoleData(req.user.role_id, "rules");
+
+        req.permissions = permission;
+
+        if (req.method === "POST" && req.baseUrl == "/api/rule") {
+            permission.permissions.create !== 0 ? next() : res.status(403).json({ message: "You do not have permission to create rule." })
+        } else if (req.method === "GET" && req.baseUrl == "/api/rule") {
+            permission.permissions.list !== 0 ? next() : res.status(403).json({ message: "You don't have permission to listing rule to the rule Data. please contact admin." })
+        } else if (req.method === "PUT") {
+            permission.permissions.update !== 0 ? next() : res.status(403).json({ message: "You do not have permission to update rule." })
+        } else if (req.method === "DELETE") {
+            permission.permissions.delete !== 0 ? next() : res.status(403).json({ message: "You do not have permission to delete rule." })
+        }
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
 
 // * ================== attendance route check permission =========================
 const attendancePermission = async (req, res, next) => {
@@ -424,5 +457,7 @@ module.exports = {
     holidayPermission,
     notificationPermission,
     reportProjectPermission,
-    notePermission
+    notePermission,
+    rulePermission,
+    leaveReportPermission
 }

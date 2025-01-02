@@ -1,6 +1,7 @@
 
 const nodemailer = require('nodemailer');
 const { SMTP_EMAIL, SMTP_PASSWORD } = process.env
+const path = require("path");
 
 const leaveEmail = async (res, mailsubject, email, content) => {
     const transporter = nodemailer.createTransport({

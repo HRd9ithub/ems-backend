@@ -8,15 +8,15 @@ const offDay = ["Saturday", "Sunday"]
 exports.leaveCalculation = async (userId, type, date) => {
     const identify = true;
     let total = 0;
-    const joiningDate = moment(date);
+    // const joiningDate = moment(date);
 
-    const afterThreeMonthDate = joiningDate.add(3, 'months');
+    // const afterThreeMonthDate = joiningDate.add(3, 'months');
 
     // Check if future date is in the same year as current date
-    const isSameYear = new Date(afterThreeMonthDate).getFullYear() === new Date().getFullYear();
+    // const isSameYear = new Date(afterThreeMonthDate).getFullYear() === new Date().getFullYear();
 
     // If not in the same year, set to start of the current year
-    const adjustedDate = isSameYear ? afterThreeMonthDate : moment().startOf('year');
+    const adjustedDate = moment().startOf('year');
 
     const leaveStartDate = adjustedDate.format("YYYY-MM-DD");
 

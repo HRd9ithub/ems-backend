@@ -35,6 +35,7 @@ const noteRoute = require('./routes/noteRoute');
 const sendBirthdayMail = require('./cron-job');
 // add database
 const connectDB = require("./DB/connection");
+const ruleRoute = require('./routes/ruleRoute');
 
 const app = express();
 
@@ -91,6 +92,7 @@ app.use('/api/invoice', invoiceRoute)
 app.use('/api/leave-setting', leaveSettingRoute);
 app.use('/api/geminiRoute', chatBotRoute);
 app.use('/api/note', noteRoute);
+app.use('/api/rule', ruleRoute);
 
 app.all("*", (req, res, next) => {
    let err = new Error(`Can't find ${req.originalUrl} on the server.`);
