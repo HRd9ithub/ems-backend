@@ -7,6 +7,63 @@ const user = require("../models/userSchema");
 const regulationMail = require("../handler/regulationEmail");
 const Attendance_Regulation = require("../models/attendanceRegulationSchema");
 const getAdminEmail = require("../helper/getAdminEmail");
+const sendAttendanceEmail = require("../handler/attendanceEmail");
+
+// add new attendance
+const createNewAttendance = async (req, res) => {
+    try {
+        const errors = expressValidator.validationResult(req)
+
+        let err = errors.array().map((val) => {
+            return val.msg
+        })
+        // check data validation error
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: err, success: false })
+        }
+
+        const { userId, time, timestamp } = req.body;
+
+        const attendanceData = await attendance.findOne({ timestamp: timestamp, userId: userId });
+
+        if (attendanceData) {
+            return res.status(400).json({
+                error: [`The date ${timestamp} already exists in the records.`],
+                success: false
+            });
+        }
+
+        const updatedTimeData = time.map((d) => {
+            return { ...d, totalHours: moment.utc(moment(d.clock_out, "HH:mm:ss A").diff(moment(d.clock_in, "HH:mm:ss A"))).format("HH:mm") }
+        });
+
+        const newAttendanceData = new attendance({
+            userId,
+            timestamp,
+            time: updatedTimeData
+        });
+
+
+        await newAttendanceData.save();
+
+        const userData = await user.findById({ _id: userId });
+
+        if (userData) {
+            await sendAttendanceEmail(userData.email, { attendanceRecords: updatedTimeData.map((d) => ({ ...d, timestamp: moment(timestamp).format("DD-MM-YYYY") })) });
+        }
+
+        return res.status(201).json({
+            message: "Data added successfully.",
+            success: true
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || "Internal server error",
+            success: false
+        })
+    }
+}
 
 // add clockIn time
 const clockIn = async (req, res) => {
@@ -396,4 +453,4 @@ const statusChange = async (req, res) => {
     }
 }
 
-module.exports = { clockIn, clockOut, getAttendance, sendRegulationMail, getAttendanceRegulation, addComment, statusChange }
+module.exports = { createNewAttendance, clockIn, clockOut, getAttendance, sendRegulationMail, getAttendanceRegulation, addComment, statusChange }
