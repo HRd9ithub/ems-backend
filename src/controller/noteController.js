@@ -22,7 +22,6 @@ const createNote = async (req, res) => {
     const noteData = new noteSchema({
       title,
       note,
-      access_employee: req.body.access_employee || [],
       createdBy: req.user._id,
     });
 
@@ -56,8 +55,7 @@ const updateNote = async (req, res) => {
       { _id: id },
       {
         $set: {
-          ...encryptedData,
-          access_employee: req.body.access_employee
+          ...encryptedData
         }
       },
       { new: true }
@@ -82,19 +80,7 @@ const getNotes = async (req, res) => {
     const { _id } = req.user;
 
     const filter = {
-      deletedAt: { $exists: false },
-      $or: [
-        {
-          access_employee: permissions?.name?.toLowerCase() === "admin"
-            ? { $nin: [] }
-            : { $eq: new mongoose.Types.ObjectId(_id) },
-        },
-        {
-          createdBy: permissions.name.toLowerCase() === "admin"
-            ? { $ne: "" }
-            : { $eq: new mongoose.Types.ObjectId(_id) },
-        },
-      ],
+      deletedAt: { $exists: false }
     };
 
     const notes = await noteSchema.aggregate([
@@ -118,27 +104,9 @@ const getNotes = async (req, res) => {
         }
       },
       {
-        $lookup: {
-          from: 'users',
-          localField: 'access_employee',
-          foreignField: '_id',
-          pipeline: [
-            {
-              $project: {
-                first_name: 1,
-                last_name: 1
-              }
-            }
-          ],
-          as: 'access'
-        }
-      },
-      {
         $project: {
           title: 1,
           note: 1,
-          access_employee: 1,
-          access: 1,
           createdAt: 1,
           updatedAt: 1,
           createdBy: 1,
@@ -152,12 +120,8 @@ const getNotes = async (req, res) => {
         _id: item._id,
         title: decryptData(item.title),
         note: item.note ? decryptData(item.note) : null,
-        access_employee: item.access_employee,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
-        access: item.access.map((val) => {
-          return { ...val, first_name: decryptData(val.first_name), last_name: decryptData(val.last_name) }
-        }),
         createdBy: item.createdBy,
         created: {
           ...item.created,
@@ -190,27 +154,9 @@ const getSingleNote = async (req, res) => {
         $match: filter
       },
       {
-        $lookup: {
-          from: 'users',
-          localField: 'access_employee',
-          foreignField: '_id',
-          pipeline: [
-            {
-              $project: {
-                first_name: 1,
-                last_name: 1
-              }
-            }
-          ],
-          as: 'access'
-        }
-      },
-      {
         $project: {
           title: 1,
           note: 1,
-          access_employee: 1,
-          access: 1,
           createdAt: 1,
           updatedAt: 1,
           createdBy: 1,
@@ -224,12 +170,8 @@ const getSingleNote = async (req, res) => {
           _id: item._id,
           title: decryptData(item.title),
           note: item.note ? decryptData(item.note) : null,
-          access_employee: item.access_employee,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
-          access: item.access.map((val) => {
-            return { ...val, first_name: decryptData(val.first_name), last_name: decryptData(val.last_name) }
-          }),
           createdBy: item.createdBy
         }
       })

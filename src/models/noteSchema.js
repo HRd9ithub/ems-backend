@@ -14,13 +14,6 @@ const noteSchema = new mongoose.Schema({
     required: true,
     ref: "user"
   },
-  access_employee: {
-    type: [
-      { type: mongoose.Schema.Types.ObjectId }
-    ],
-    required: true,
-    ref: "user"
-  },
   deletedAt: {
     type: Date
   }

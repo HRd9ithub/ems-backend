@@ -36,6 +36,7 @@ const sendBirthdayMail = require('./cron-job');
 // add database
 const connectDB = require("./DB/connection");
 const ruleRoute = require('./routes/ruleRoute');
+const noteImage = require('./middlewares/noteImage');
 
 const app = express();
 
@@ -93,6 +94,16 @@ app.use('/api/leave-setting', leaveSettingRoute);
 app.use('/api/geminiRoute', chatBotRoute);
 app.use('/api/note', noteRoute);
 app.use('/api/rule', ruleRoute);
+
+app.post('/api/upload', noteImage, (req, res) => { // Correct order
+   if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+   }
+
+   const imageUrl = `${process.env.BACKEND_URL}/uploads/${req.file.filename}`;
+
+   res.json({ success: true, data: { url: imageUrl } });
+});
 
 app.all("*", (req, res, next) => {
    let err = new Error(`Can't find ${req.originalUrl} on the server.`);
