@@ -57,13 +57,17 @@ const invoiceBusinessSchema = new Schema({
         type: String,
         get: invoiceBusinessDataDecrypt
     },
+    custom_field: {
+        type: String,
+        get: invoiceBusinessDataDecrypt
+    },
     deleteAt: {
         type: Date,
     },
 },
     {
         timestamps: true
-    }, { toJSON: { getters: true }}
+    }, { toJSON: { getters: true } }
 );
 
 const invoice_business = new model("invoice_business", invoiceBusinessSchema);

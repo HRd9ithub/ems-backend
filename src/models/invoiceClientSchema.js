@@ -56,7 +56,7 @@ const invoiceClientSchema = new Schema({
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref : user
+        ref: user
     },
     GSTIN: {
         type: String,
@@ -66,13 +66,21 @@ const invoiceClientSchema = new Schema({
         type: String,
         get: invoiceDataDecrypt
     },
+    pan_number: {
+        type: String,
+        get: invoiceDataDecrypt
+    },
+    custom_field: {
+        type: String,
+        get: invoiceDataDecrypt
+    },
     deleteAt: {
         type: Date,
     },
 },
     {
         timestamps: true
-    }, { toJSON: { getters: true }}
+    }, { toJSON: { getters: true } }
 );
 
 const invoice_client = new model("invoice_client", invoiceClientSchema);

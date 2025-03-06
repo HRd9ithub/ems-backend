@@ -21,11 +21,11 @@ const createAccount = async (req, res) => {
         }
 
         const response = await invoice_account.create(req.body);
-        await invoice_account.updateMany({ _id: { $ne : response._id} }, {status : false});
 
         return res.status(201).json({
             message: "Data added successfully.",
-            success: true
+            success: true,
+            data: response
         })
     } catch (error) {
         res.status(500).json({
@@ -51,16 +51,16 @@ const updateAccount = async (req, res) => {
         }
 
         for (const key in req.body) {
-            if(key !== "status"){
+            if (key !== "status") {
                 req.body[key] = encryptData(req.body[key])
             }
         }
-        const response = await invoice_account.findByIdAndUpdate({ _id: id }, req.body);
-        await invoice_account.updateMany({ _id: { $ne : id} }, {status : false});
+        const response = await invoice_account.findByIdAndUpdate({ _id: id }, req.body, { new: true });
 
         return res.status(200).json({
             message: "Data updated successfully.",
-            success: true
+            success: true,
+            data: response
         })
     } catch (error) {
         res.status(500).json({
@@ -75,7 +75,7 @@ const getSingleAccount = async (req, res) => {
     try {
         const { invoiceId } = req.params;
 
-        const result = await invoice_account.findOne({status : true});
+        const result = await invoice_account.findOne({ status: true });
 
         return res.status(200).json({
             message: "Data fetch successfully.",

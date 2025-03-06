@@ -2,6 +2,7 @@ const { model, Schema } = require("mongoose");
 const invoice_business = require("./invoiceBusinessSchema");
 const invoice_client = require("./invoiceClientSchema");
 const user = require("./userSchema");
+const invoice_account = require("./invoiceAccountSchema");
 
 const invoiceSchema = new Schema({
     invoiceId: {
@@ -31,6 +32,10 @@ const invoiceSchema = new Schema({
         type: Schema.Types.ObjectId,
         required: true,
         ref: invoice_client
+    },
+    invoice_accounts_id: {
+        type: Schema.Types.ObjectId,
+        ref: invoice_account
     },
     userId: {
         type: Schema.Types.ObjectId,
