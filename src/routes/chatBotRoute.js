@@ -18,7 +18,6 @@ route.post('/', async (req, res) => {
     // Sending back the generated text as a response
     return res.json({ success:true, message: "", data: text }); // Send JSON response containing the generated text
   } catch (error) {
-    console.error('Error:', error);
     res.status(500).json({ error: error.message || "Internal server error.", success: false });
   }
 });
