@@ -6,9 +6,9 @@ const decryptData = require("../helper/decryptData");
 const path = require("path");
 const fs = require('fs');
 const ejs = require('ejs');
-const { default: puppeteer } = require("puppeteer");
 const moment = require("moment");
 const invoice_account = require("../models/invoiceAccountSchema");
+const html_to_pdf = require('html-pdf-node');
 
 // create invoice
 const createInvoice = async (req, res) => {
@@ -167,10 +167,10 @@ const updateInvoice = async (req, res) => {
 // get single data common
 
 const getSingleData = async (id, userId) => {
-    if(id && id !== "undefined"){
+    if (id && id !== "undefined") {
         const result = await invoice.aggregate([
             {
-                $match: { 
+                $match: {
                     _id: new mongoose.Types.ObjectId(id)
                 }
             },
@@ -186,7 +186,7 @@ const getSingleData = async (id, userId) => {
             },
             {
                 $lookup: {
-                    from: "invoice_accounts", localField: "_id", foreignField: "invoice_id", as: "bankDetails"
+                    from: "invoice_accounts", localField: "invoice_accounts_id", foreignField: "_id", as: "bankDetails"
                 }
             },
             {
@@ -201,7 +201,7 @@ const getSingleData = async (id, userId) => {
                 }
             }
         ])
-    
+
         const decryptResult = result.map((val) => {
             return {
                 ...val,
@@ -218,7 +218,8 @@ const getSingleData = async (id, userId) => {
                         "postcode": decryptData(elem.postcode),
                         "address": decryptData(elem.address),
                         "GSTIN": decryptData(elem.GSTIN),
-                        "pan_number": decryptData(elem.pan_number)
+                        "pan_number": decryptData(elem.pan_number),
+                        "custom_field": decryptData(elem?.custom_field || "")
                     }
                 }),
                 bankDetails: val.bankDetails.map((elem) => {
@@ -243,19 +244,20 @@ const getSingleData = async (id, userId) => {
                         "postcode": decryptData(elem.postcode),
                         "address": decryptData(elem.address),
                         "GSTIN": decryptData(elem.GSTIN),
-                        "pan_number": decryptData(elem.pan_number)
+                        "pan_number": decryptData(elem.pan_number),
+                        "custom_field": decryptData(elem?.custom_field || "")
                     }
                 })
             }
         })
-    
+
         return decryptResult
-    }else{
+    } else {
         const result = await invoice.aggregate([
             {
-                $match: { 
+                $match: {
                     userId: new mongoose.Types.ObjectId(userId),
-                    deleteAt: {$exists: false}
+                    deleteAt: { $exists: false }
                 }
             },
             {
@@ -270,7 +272,7 @@ const getSingleData = async (id, userId) => {
             },
             {
                 $lookup: {
-                    from: "invoice_accounts", localField: "_id", foreignField: "invoice_id", as: "bankDetails"
+                    from: "invoice_accounts", localField: "invoice_accounts_id", foreignField: "_id", as: "bankDetails"
                 }
             },
             {
@@ -291,7 +293,7 @@ const getSingleData = async (id, userId) => {
                 }
             }
         ])
-    
+
         const decryptResult = result.map((val) => {
             return {
                 ...val,
@@ -308,7 +310,8 @@ const getSingleData = async (id, userId) => {
                         "postcode": decryptData(elem.postcode),
                         "address": decryptData(elem.address),
                         "GSTIN": decryptData(elem.GSTIN),
-                        "pan_number": decryptData(elem.pan_number)
+                        "pan_number": decryptData(elem.pan_number),
+                        "custom_field": decryptData(elem?.custom_field || "")
                     }
                 }),
                 bankDetails: val.bankDetails.map((elem) => {
@@ -333,12 +336,13 @@ const getSingleData = async (id, userId) => {
                         "postcode": decryptData(elem.postcode),
                         "address": decryptData(elem.address),
                         "GSTIN": decryptData(elem.GSTIN),
-                        "pan_number": decryptData(elem.pan_number)
+                        "pan_number": decryptData(elem.pan_number),
+                        "custom_field": decryptData(elem?.custom_field || "")
                     }
                 })
             }
         })
-    
+
         return decryptResult
     }
 }
@@ -550,8 +554,6 @@ const downloadInvoice = async (req, res) => {
         const { id } = req.query;
 
         const result = await getSingleData(id);
-        const bankDetail = await invoice_account.findOne({ status: true });
-
 
         if (!result || result.length === 0) {
             return res.status(404).json({ message: 'Record not found', success: false })
@@ -565,10 +567,11 @@ const downloadInvoice = async (req, res) => {
             invoiceClient: result[0].invoiceClient[0],
             tableHead: result[0].productDetails[0].tableHead,
             tableBody: result[0].productDetails[0].tableBody,
-            bankDetail,
+            bankDetail: result[0].bankDetails?.length > 0 ? result[0].bankDetails[0] : "",
             issue_date: moment(result[0].issue_date).format("DD MMM YYYY"),
             due_date: result[0].due_date && moment(result[0].due_date).format("DD MMM YYYY"),
-            businessLogo: result[0].businessLogo ? "data:image/png;base64,"+convertImageToBase64(imagePath) : ""
+            businessLogo: result[0].businessLogo ? "data:image/png;base64," + convertImageToBase64(imagePath) : "",
+            BACKEND_URL: process.env.BACKEND_URL
         }
         // get file path
         const filepath = path.resolve(__dirname, "../../views/invoiceTemplate.ejs");
@@ -578,20 +581,10 @@ const downloadInvoice = async (req, res) => {
         // add data dynamic
         const htmlContent = ejs.render(htmlstring, ejsData);
 
-        // Launch a headless browser using puppeteer
-        const browser = await puppeteer.launch({
-            args: ['--no-sandbox'],
-            timeout: 10000,
-        });
-        const page = await browser.newPage();
+        const file = { content: htmlContent };
 
-        // Set the content and styles for the PDF
-        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
-
-        // Generate the PDF
-        const pdfBuffer = await page.pdf({
+        const options = {
             format: 'A4',
-            displayHeaderFooter: false, // Set to false to remove the duplicate head
             margin: {
                 top: '20px',
                 bottom: '20px',
@@ -599,23 +592,33 @@ const downloadInvoice = async (req, res) => {
                 right: '20px',
             },
             printBackground: true,
+            args: ['--no-sandbox']
+        };
+
+        const pdfFileName = `invoice-${result[0].invoiceId}.pdf`;
+        const pdfPath = path.join(__dirname, '../../public/', pdfFileName); // Use a temp folder!
+
+        html_to_pdf.generatePdf(file, options).then(pdfBuffer => {
+            fs.writeFileSync(pdfPath, pdfBuffer);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${pdfFileName}"`);
+            res.send(pdfBuffer);
+            //clean up temp file.
+            setTimeout(() => {
+                fs.unlinkSync(pdfPath);
+            }, 500);
+        }).catch(error => {
+            console.error("PDF generation error: ", error);
+            return res.status(500).json({ message: error.message || 'Internal server Error', success: false, stack: error.stack });
         });
 
-        // Close the browser
-        await browser.close();
-
-        // Send the generated PDF as a downloadable file
-        const pdfFileName = '../../public/invoice.pdf';
-        const pdfPath = path.join(__dirname, pdfFileName);
-        // Save the PDF to a file
-        fs.writeFileSync(pdfPath, pdfBuffer);
-        res.download(pdfPath)
     } catch (error) {
+        console.error("Main error: ", error);
         return res.status(500).json({
-            message: error.message || "Interner server error",
+            message: error.message || "Internal server error",
             success: false,
             statusCode: 500
-        })
+        });
     }
 }
 
@@ -628,5 +631,31 @@ function convertImageToBase64(imagePath) {
 
     return base64Image;
 }
+const updateBankToggle = async (req, res) => {
+    try {
+        const { invoice_id, account_id } = req.body;
 
-module.exports = { createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice, restoreInvoice, statusInvoice, downloadInvoice }
+        if (!invoice_id) {
+            return res.status(400).json({
+                message: "Invoice Id is a required.",
+                success: false
+            })
+        }
+
+        const query = account_id ? { $set: { invoice_accounts_id: account_id } } : { $unset: { invoice_accounts_id: 1 } }
+
+        const updateData = await invoice.findByIdAndUpdate({ _id: invoice_id }, query);
+
+        return res.status(200).json({
+            message: account_id ? "Bank account enabled successfully!" : "Bank account disabled successfully!",
+            success: true
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || "Internal server error",
+            success: false,
+            statusCode: 500
+        });
+    }
+}
+module.exports = { updateBankToggle, createInvoice, updateInvoice, getSingleInvoice, getInvoice, deleteInvoice, restoreInvoice, statusInvoice, downloadInvoice }

@@ -43,13 +43,21 @@
             align-items: center;
         }
 
+        .invoice-bill-detail {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
         .bill-by-to-section {
             background-color: #00458f;
             color: white;
             padding: 1.2rem 1.8rem;
             border-radius: 5px;
-            height: inherit;
+            min-height: 200px;
+            height: 100%;
         }
+
         .total-section {
             /* background-color: green; */
             background-color: rgb(247, 250, 255);
@@ -90,8 +98,45 @@
             font-weight: 500;
             background-color: rgb(247, 250, 255);
         }
-        .noraml-font{
+
+        .noraml-font {
             font-weight: 400 !important;
+        }
+
+        .body-div {
+            background: rgb(247, 250, 255);
+        }
+
+
+        .bill-section-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 10px 0;
+            table-layout: fixed;
+            margin: 15px 0;
+        }
+
+        .bill-section-table td {
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            vertical-align: top;
+            background-color: #00458f;
+            color: white;
+        }
+
+        .bill-section-table p {
+            margin-bottom: 5px !important;
+            font-size: 16px;
+        }
+
+        .bill-section-table h3 {
+            color: #a1daf8;
+        }
+
+        .bill-section-table h4 {
+            font-size: 20px;
+            margin: 15px 0 8px;
         }
     </style>
 </head>
@@ -122,10 +167,10 @@
                         <td>Due Date</td>
                         <td>
                             <% if (due_date) { %>
-                            <%= due_date %>
-                            <% } else { %>
-                                Not Set
-                            <% } %>
+                                <%= due_date %>
+                                    <% } else { %>
+                                        Not Set
+                                        <% } %>
                         </td>
                     </tr>
                     <% if (result.hasOwnProperty("extra_field")) { %>
@@ -138,256 +183,339 @@
                                     <%= val.value %>
                                 </td>
                             </tr>
-                        <% }); %>
-                    <% } %>
+                            <% }); %>
+                                <% } %>
                 </table>
             </td>
             <td>
                 <div class="bill-by-image">
-                    <img src=<%= businessLogo %> alt="img" width="100%" height="auto">
+                    <img src=<%=businessLogo %> alt="img" width="150" height="150">
                 </div>
             </td>
         </tr>
-        <tr>
-            <td style="padding: 25px 15px 0 0; width: 50%;" height="200">
-                <div class="bill-by-to-section">
-                    <h3>Billed By</h3>
-                    <h4><%= provider.business_name %></h4>
-                    <% if (provider.address) { %>
-                        <p><%= provider.address?.concat(" ", provider.city)%><%= provider.state %><%= provider.country %> <%= provider.postcode%> </p>
-                    <% } %>
-                    <% if(provider.GSTIN) {%>
-                        <p><b>GSTIN: </b><%= provider.GSTIN %></p>
-                    <% } %>
-                    <% if(provider.pan_number) {%>
-                        <p><b>PAN: </b><%= provider.pan_number %></p>
-                    <% } %>
-                    <% if(provider.email) {%>
-                        <p><b>Email: </b><%= provider.email %></p>
-                    <% } %>
-                    <% if(provider.phone) {%>
-                        <p><b>Phone: </b>+91 <%= provider.phone %></p>
-                    <% } %>
-                </div>
-            </td>
-            <td style="padding: 25px 0 0 15px; width: 50%; " height="200">
-                <div class="bill-by-to-section">
-                    <h3>Billed To</h3>
-                    <h4><%= invoiceClient.business_name %></h4>
-                    <% if(invoiceClient.client_industry) { %> 
-                        <p><%= invoiceClient.client_industry %></p>
-                    <% } %>
-                    <% if (invoiceClient.address) { %>
-                        <p><%= invoiceClient.address?.concat(" ", invoiceClient.city)%><%= invoiceClient.state %><%= invoiceClient.country %> <%= invoiceClient.postcode%> </p>
-                    <% } %>
-                    <% if(invoiceClient.GSTIN) {%>
-                        <p><b>GSTIN: </b><%= invoiceClient.GSTIN %></p>
-                    <% } %>
-                    <% if(invoiceClient.pan_number) {%>
-                        <p><b>PAN: </b><%= invoiceClient.pan_number %></p>
-                    <% } %>
-                    <% if(invoiceClient.email) {%>
-                        <p><b>Email: </b><%= invoiceClient.email %></p>
-                    <% } %>
-                    <% if(invoiceClient.phone) {%>
-                        <p><b>Phone: </b>+91 <%= invoiceClient.phone %></p>
-                    <% } %>
-                </div>
-            </td>
+        <tr style="margin-top: 20px;">
+            <table class="bill-section-table">
+                <tr>
+                    <td>
+                        <h3 style="color: #ffffff;">Billed By</h3>
+                        <h4>
+                            <%= provider.business_name %>
+                        </h4>
+                        <% if (provider.address) { %>
+                            <p>
+                                <%= provider.address?.concat(" ", provider.city)%><%= provider.state %><%= provider.country %> <%= provider.postcode%> </p>
+                            <% } %>
+                            <% if(provider.GSTIN) {%>
+                                <p><b>GSTIN: </b><%= provider.GSTIN %></p>
+                            <% } %>
+                            <% if(provider.pan_number) {%>
+                                <p><b>PAN: </b><%= provider.pan_number %></p>
+                            <% } %>
+                            <% if(provider.email) {%>
+                                <p><b>Email: </b><%= provider.email %></p>
+                            <% } %>
+                            <% if(provider.phone) {%>
+                                <p><b>Phone: </b>+91 <%= provider.phone %></p>
+                            <% } %>
+                            <% if (provider && provider.custom_field) { %>
+                            <% try { %>
+                                <% const customFields = JSON.parse(provider.custom_field); %>
+                                <% if (customFields && customFields.length > 0) { %>
+                                <% customFields.forEach(field => { %>
+                                    <p>
+                                    <b><%= field.name %>:</b> <%= field.value %>
+                                    </p>
+                                <% }); %>
+                                <% } %>
+                            <% } catch (error) { %>
+                                <p><i>Custom field data could not be displayed.</i></p>
+                                <% console.error(" Error parsing custom fields:", error); %>
+                                    <% } %>
+                                        <% } %>
+                    </td>
+                    <td>
+                        <h3 style="color: #ffffff;">Billed To</h3>
+                        <h4>
+                            <%= invoiceClient.business_name %>
+                        </h4>
+                        <% if(invoiceClient.client_industry) { %>
+                            <p>
+                                <%= invoiceClient.client_industry %>
+                            </p>
+                            <% } %>
+                                <% if (invoiceClient.address) { %>
+                                    <p>
+                                        <%= invoiceClient.address?.concat(" ", invoiceClient.city)%><%= invoiceClient.state %><%= invoiceClient.country %> <%= invoiceClient.postcode%> </p>
+                        <% } %>
+                        <% if(invoiceClient.GSTIN) {%>
+                            <p><b>GSTIN: </b><%= invoiceClient.GSTIN %></p>
+                        <% } %>
+                        <% if(invoiceClient.pan_number) {%>
+                            <p><b>PAN: </b><%= invoiceClient.pan_number %></p>
+                        <% } %>
+                        <% if(invoiceClient.email) {%>
+                            <p><b>Email: </b><%= invoiceClient.email %></p>
+                        <% } %>
+                        <% if(invoiceClient.phone) {%>
+                            <p><b>Phone: </b>+91 <%= invoiceClient.phone %></p>
+                        <% } %>
+                        <% if (invoiceClient && invoiceClient.custom_field) { %>
+                        <% try { %>
+                            <% const customFields = JSON.parse(invoiceClient.custom_field); %>
+                            <% if (customFields && customFields.length > 0) { %>
+                            <% customFields.forEach(field => { %>
+                                <p>
+                                <b><%= field.name %>:</b> <%= field.value %>
+                                </p>
+                            <% }); %>
+                            <% } %>
+                        <% } catch (error) { %>
+                            <p><i>Custom field data could not be displayed.</i></p>
+                            <% console.error(" Error parsing custom fields:", error); %>
+                                            <% } %>
+                                                <% } %>
+                    </td>
+                </tr>
+            </table>
         </tr>
         <tr>
-            <td colspan="2" style="padding-top: 30px;">
+            <td colspan=" 2" style="padding-top: 30px;">
                 <table class="table" cellpadding="0" cellspacing="0" width="100%" align="center">
                     <thead>
                         <tr>
-                            <% tableHead.map((val, ind) => { %>
-                                <% if(val.toggle) { %> 
-                                    <th key={ind}><%= val.field %>
-                                    <% if(val.name === "amount") {%>
-                                        (<%= result.currency?.slice(6) %>)
-                                    <% } %>
+                            <% tableHead.map((val, ind)=> { %>
+                                <% if(val.toggle) { %>
+                                    <th key={ind} style="white-space: nowrap;">
+                                        <%= val.field %>
+                                            <% if(val.name==="amount" ) {%>
+                                                (<%= result.currency?.slice(6) %>)
+                                                    <% } %>
                                     </th>
-                                <% } %>
-                            <% }); %>
+                                    <% } %>
+                                        <% }); %>
                         </tr>
                     </thead>
-                    <tbody>
-                        <% tableBody.map((val, ind) => { %>
+                    <tbody class="body-div">
+                        <% tableBody.map((val, ind)=> { %>
                             <tr>
-                                <% tableHead.map((column, ind) => { %>
+                                <% tableHead.map((column, ind)=> { %>
                                     <% if(column.toggle) { %>
-                                        <td> 
+                                        <td>
                                             <% if(val[column.name]) { %>
                                                 <%= val[column.name] %>
-                                            <% } %>
-                                            <% if(column.name === "itemName") { %>
-                                                <div>
-                                                    <%- val.description %>
-                                                </div>
-                                            <% } %>
+                                                    <% } %>
+                                                        <% if(column.name==="itemName" ) { %>
+                                                            <div>
+                                                                <%- val.description %>
+                                                            </div>
+                                                            <% } %>
                                         </td>
-                                    <% } %>
-                                <% }); %>
+                                        <% } %>
+                                            <% }); %>
                             </tr>
-                        <% }); %>
+                            <% }); %>
                     </tbody>
                 </table>
             </td>
         </tr>
         <tr>
-            <td style="padding-top: 30px;">
-                <% if(bankDetail) { %>
-                    <div class="bill-by-to-section">
-                        <h3 style="margin-bottom: 15px;">Bank Details</h3>
-                        <table class="bank-details">
-                            <tbody>
-                                <tr>
-                                    <td style="white-space: nowrap;">Account Number</td>
-                                    <td><%= bankDetail.account_number %></td>
-                                </tr>
-                                <tr>
-                                    <td>IFSC Code</td>
-                                    <td><%= bankDetail.ifsc_code %></td>
-                                </tr>
-                                <tr>
-                                    <td>Bank Name</td>
-                                    <td><%= bankDetail.bank %></td>
-                                </tr>
-                                <tr>
-                                    <td>Branch Name</td>
-                                    <td><%= bankDetail.branch_name %></td>
-                                </tr>
-                                <tr>
-                                    <td>Name</td>
-                                    <td><%= bankDetail.name %></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                <% } %>
-            </td>
-            <td style="padding-top: 30px; width: 50%;" >
-                <div>
-                    <table class="bank-details total-section" align="right">
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <p className="text-left mb-0 noraml-font">Amount:</p>
-                                </td>
-                                <td>
-                                    <p className="text-right mb-0 noraml-font">
-                                        <%= result.currency?.slice(6) %> 
-                                        <%= parseFloat(result.totalSubAmount).toFixed(2) %>
-                                    </p>
-                                </td>
-                            </tr>
-                            <% if(result.gstType === "CGST & SGST") {%>
-                                <tr>
-                                    <td>
-                                        <p className="text-left mb-0">CGST:</p>
-                                    </td>
-                                    <td>
-                                        <p className="text-right mb-0"><%= result.currency?.slice(6) %> 
-                                            <%= parseFloat(tableBody.reduce((total, cur) => { return total + parseFloat(cur.SGST)}, 0)).toFixed(2) %>
-                                        </p>
-                                    </td>
-                                </tr>
+            <table width="100%" align="center" >
+                <tr>
+                    <td style="padding-top: 30px;width: 30%;">
+                        <% if(bankDetail) { %>
+                            <div class="bill-by-to-section">
+                                <h3 style="margin-bottom: 15px;">Bank Details</h3>
+                                <table class="bank-details">
+                                    <tbody>
+                                        <tr>
+                                            <td style="white-space: nowrap;">Account Number</td>
+                                            <td>
+                                                <%= bankDetail.account_number %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>IFSC Code</td>
+                                            <td>
+                                                <%= bankDetail.ifsc_code %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Bank Name</td>
+                                            <td>
+                                                <%= bankDetail.bank %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Branch Name</td>
+                                            <td>
+                                                <%= bankDetail.branch_name %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Name</td>
+                                            <td>
+                                                <%= bankDetail.name %>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                             <% } %>
-                            <% if(result.gstType === "CGST & SGST") {%>
-                                <tr>
-                                    <td>
-                                        <p className="text-left mb-0">SGST:</p>
-                                    </td>
-                                    <td>
-                                        <p className="text-right mb-0"><%= result.currency?.slice(6) %> 
-                                            <%= parseFloat(tableBody.reduce((total, cur) => { return total + parseFloat(cur.SGST)}, 0)).toFixed(2) %>
-                                        </p>
-                                    </td>
-                                </tr>
-                            <% } %>
-                            <% if(result.gstType === "IGST") {%>
-                                <tr>
-                                    <td>
-                                        <p className="text-left mb-0">IGST:</p>
-                                    </td>
-                                    <td>
-                                        <p className="text-right mb-0"><%= result.currency?.slice(6) %> 
-                                            <%= parseFloat(tableBody.reduce((total, cur) => { return total + parseFloat(cur.IGST)}, 0)).toFixed(2) %>
-                                        </p>
-                                    </td>
-                                </tr>
-                            <% } %>
-                            <tr>
-                                <td colspan="2"><div style="border-top: 1px solid rgba(0, 0, 0, 0.1) !important; width: 200px !important;"></div></td>
-                            </tr>
-                            
-                            <tr>
-                                <td>
-                                    <p className="text-left mb-0">Total:</p>
-                                </td>
-                                <td>
-                                    <p className="text-right mb-0"><%= result.currency?.slice(6)%>
-                                        <%= parseFloat(result.totalAmount).toFixed(2) %>
-                                    </p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </td>
+                    </td>
+                    <td style="padding-top: 30px; width: 70%;">
+                        <% if(!bankDetail) { %>
+                            <div style="width: 370px; margin: 25px 0 10px auto;">
+                        <% }else { %>
+                                <div>
+                                 <% } %>
+                            <table class="bank-details total-section" align="right">
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <p className="text-left mb-0 noraml-font">Amount:</p>
+                                        </td>
+                                        <td>
+                                            <p className="text-right mb-0 noraml-font">
+                                                <%= result.currency?.slice(6) %>
+                                                    <%= parseFloat(result.totalSubAmount).toFixed(2) %>
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <% if(result.gstType==="CGST & SGST" ) {%>
+                                        <tr>
+                                            <td>
+                                                <p className="text-left mb-0">CGST:</p>
+                                            </td>
+                                            <td>
+                                                <p className="text-right mb-0">
+                                                    <%= result.currency?.slice(6) %>
+                                                        <%= parseFloat(tableBody.reduce((total, cur)=> { return total +
+                                                            parseFloat(cur.SGST)}, 0)).toFixed(2) %>
+                                                </p>
+                                            </td>
+                                        </tr>
+                                        <% } %>
+                                            <% if(result.gstType==="CGST & SGST" ) {%>
+                                                <tr>
+                                                    <td>
+                                                        <p className="text-left mb-0">SGST:</p>
+                                                    </td>
+                                                    <td>
+                                                        <p className="text-right mb-0">
+                                                            <%= result.currency?.slice(6) %>
+                                                                <%= parseFloat(tableBody.reduce((total, cur)=> { return total +
+                                                                    parseFloat(cur.SGST)}, 0)).toFixed(2) %>
+                                                        </p>
+                                                    </td>
+                                                </tr>
+                                                <% } %>
+                                                    <% if(result.gstType==="IGST" ) {%>
+                                                        <tr>
+                                                            <td>
+                                                                <p className="text-left mb-0">IGST:</p>
+                                                            </td>
+                                                            <td>
+                                                                <p className="text-right mb-0">
+                                                                    <%= result.currency?.slice(6) %>
+                                                                        <%= parseFloat(tableBody.reduce((total, cur)=> {
+                                                                            return
+                                                                            total + parseFloat(cur.IGST)},
+                                                                            0)).toFixed(2) %>
+                                                                </p>
+                                                            </td>
+                                                        </tr>
+                                                        <% } %>
+                                                            <tr>
+                                                                <td colspan="2">
+                                                                    <div
+                                                                        style="border-top: 1px solid rgba(0, 0, 0, 0.1) !important; width: 200px !important;">
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+
+                                                            <tr>
+                                                                <td>
+                                                                    <p className="text-left mb-0">Total:</p>
+                                                                </td>
+                                                                <td>
+                                                                    <p className="text-right mb-0">
+                                                                        <%= result.currency?.slice(6)%>
+                                                                            <%= parseFloat(result.totalAmount).toFixed(2)
+                                                                                %>
+                                                                    </p>
+                                                                </td>
+                                                            </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </tr>
-        <% if(result.hasOwnProperty("terms") && result.terms.length !== 0) { %>
+        <% if(result.hasOwnProperty("terms") && result.terms.length !==0) { %>
             <tr>
                 <td colspan="2">
                     <h3 style="margin: 22px 0 10px;">Terms & Conditions</h3>
                     <ol style="margin: 0; padding-left: 20px;">
-                        <% result.terms.map((val, ind) => { %>
-                            <li  style="margin-bottom: 10px; line-height: 1.6;"><%= val %></li>
-                        <% }) %>
+                        <% result.terms.map((val, ind)=> { %>
+                            <li style="margin-bottom: 10px; line-height: 1.6;">
+                                <%= val %>
+                            </li>
+                            <% }) %>
                     </ol>
                 </td>
             </tr>
-        <% } %>
-        <% if(result.hasOwnProperty("note") && result.note) { %>
-            <tr>
-                <td colspan="2">
-                    <h3 style="margin: 18px 0 10px;">Additional Notes</h3>
-                    <p style="line-height: 1.6;"><%- result.note %></p>
-                </td>
-            </tr>
-        <% } %>
-        <% if(result.hasOwnProperty("attchmentFile") && result.attchmentFile.length !== 0 || result.signImage) { %>
-            <tr>
-                <td>
-                    <% if(result.hasOwnProperty("attchmentFile") && result.attchmentFile.length !== 0) { %>
-                        <h3 style="margin: 18px 0 10px;">Attachment</h3>
-                        <ol style="margin: 0; padding-left: 20px;">
-                            <% result.attchmentFile.map((val, ind) => { %>
-                                <li  style="margin-bottom: 10px; line-height: 1.6;"><%= val %></li>
-                            <% }) %>
-                        </ol>
+            <% } %>
+                <% if(result.hasOwnProperty("note") && result.note) { %>
+                    <tr>
+                        <td colspan="2">
+                            <h3 style="margin: 18px 0 10px;">Additional Notes</h3>
+                            <p style="line-height: 1.6;"><%- result.note %></p>
+                        </td>
+                    </tr>
                     <% } %>
-                </td>
-                <td>
-                    <% if(result.signImage) { %>
-                        <div style="width: 300px; margin: 25px 0 10px auto;">
-                            <div style="background-color: rgb(247, 250, 255); border-radius: 5px;">
-                                <img src=<%= result.signImage %> alt="signeture" width="100%" height="auto">
-                            </div>
-                            <h4 style="text-align: center; color: #000000ad;">Authorised Signatory</h4>
-                        </div>
-                    <% } %>
-                </td>
-            </tr>
-        <% } %>
-        <% if(result.hasOwnProperty("contact") && result.contact) { %>
-            <tr>
-                <td colspan="2">
-                    <hr style="border-top: 1px solid #d7d7d7ad; margin: 15px 0;">
-                    <p style="text-align: center; color: gray; font-weight: 500;"><%= result.contact %></p>
-                </td>
-            </tr>
-        <% } %>
+                        <% if(result.hasOwnProperty("attchmentFile") && result.attchmentFile.length !==0 ||
+                            result.signImage) { %>
+                            <tr>
+                                <td>
+                                    <% if(result.hasOwnProperty("attchmentFile") && result.attchmentFile.length !==0) {
+                                        %>
+                                        <h3 style="margin: 18px 0 10px;">Attachment</h3>
+                                        <ol style="margin: 0; padding-left: 20px;">
+                                            <% result.attchmentFile.map((val, ind)=> { %>
+                                                <li style="margin-bottom: 10px; line-height: 1.6;">
+                                                    <a href="<%= BACKEND_URL %>/uploads/<%= val %>" target="_blank"
+                                                        style="color: #000000; text-decoration: none;">
+                                                        <%= val %>
+                                                    </a>
+                                                </li>
+                                                <% }) %>
+                                        </ol>
+                                        <% } %>
+                                </td>
+                                <td>
+                                    <% if(result.signImage) { %>
+                                        <div style="width: 300px; margin: 25px 0 10px auto;">
+                                            <div style="background-color: rgb(247, 250, 255); border-radius: 5px;">
+                                                <img src=<%=result.signImage %> alt="signeture" width="100%"
+                                                height="auto">
+                                            </div>
+                                            <h4 style="text-align: center; color: #000000ad;">Authorised Signatory</h4>
+                                        </div>
+                                        <% } %>
+                                </td>
+                            </tr>
+                            <% } %>
+                                <% if(result.hasOwnProperty("contact") && result.contact) { %>
+                                    <tr>
+                                        <td colspan="2">
+                                            <hr style="border-top: 1px solid #d7d7d7ad; margin: 15px 0;">
+                                            <p style="text-align: center; color: gray; font-weight: 500;">
+                                                <%= result.contact %>
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <% } %>
     </table>
 </body>
 

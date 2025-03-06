@@ -11,10 +11,10 @@ const path = require("path");
 const fs = require('fs');
 const ejs = require('ejs');
 const reportDownloadSchema = require("../models/reportDownloadSchema");
-const { default: puppeteer } = require("puppeteer");
 const workReportMail = require("../handler/workReportEmail");
 const ReportRequestSchema = require("../models/reportRequestSchema");
 const html_to_pdf = require('html-pdf-node');
+const { v4: uuidv4 } = require('uuid');
 
 const createReport = async (req, res) => {
     try {
@@ -49,7 +49,7 @@ const createReport = async (req, res) => {
             ]
         })
         if (reports) {
-            return res.status(400).json({ success: true, error: ["Please note that you are only able to submit one report per day."] })
+            return res.status(400).json({ success: false, error: ["A report for the same day already exists."] })
         }
 
         const reportData = new report({
@@ -114,7 +114,7 @@ const updateReport = async (req, res) => {
             ]
         })
         if (reports && reports._id != req.params.id) {
-            return res.status(400).json({ success: true, error: ["Please note that you are only able to submit one report per day."] })
+            return res.status(400).json({ success: false, error: ["A report for the same day already exists."] })
         }
 
         const updateData = await report.findByIdAndUpdate({ _id: req.params.id }, {
@@ -730,17 +730,30 @@ const downloadReport = async (req, res) => {
         const file = { content: htmlContent };
 
         // Send the generated PDF as a downloadable file
-        const pdfFileName = '../../public/work-report.pdf';
+        const pdfFileName = `../../public/work-report-${uuidv4()}.pdf`;
         const pdfPath = path.join(__dirname, pdfFileName);
 
         html_to_pdf.generatePdf(file, options).then(pdfBuffer => {
             fs.writeFileSync(pdfPath, pdfBuffer);
-            return res.download(pdfPath);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="work-report-${uuidv4()}.pdf"`);
+            res.send(pdfBuffer);
+            //clean up temp file.
+            setTimeout(() => {
+                fs.unlinkSync(pdfPath);
+            }, 1000);
         }).catch(error => {
-            return res.status(500).json({ message: error.message || 'Internal server Error', success: false, stack: error.stack })
+            console.error("PDF generation error: ", error);
+            return res.status(500).json({ message: error.message || 'Internal server Error', success: false, stack: error.stack });
         });
+
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Internal server Error', success: false })
+        console.error("Main error: ", error);
+        return res.status(500).json({
+            message: error.message || "Internal server error",
+            success: false,
+            statusCode: 500
+        });
     }
 }
 
