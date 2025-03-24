@@ -125,26 +125,6 @@ const getAttendance = async (req, res) => {
                 }
             },
             {
-                $lookup: {
-                    from: "attendance_regulations",
-                    localField: "time._id",
-                    foreignField: "attendanceId",
-                    pipeline: [
-                        {
-                            $match: {
-                                "deleteAt": { $exists: false },
-                            }
-                        }
-                    ], as: "attendance_regulations_data"
-                }
-            },
-            {
-                $unwind: {
-                    "path": "$attendance_regulations_data",
-                    "preserveNullAndEmptyArrays": true
-                }
-            },
-            {
                 $group:
                 {
                     _id: "$userId",
@@ -203,6 +183,117 @@ const getAttendance = async (req, res) => {
             message: 'Successfully fetched data',
             data: result,
             currentData,
+            permissions: req.permissions
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || "Interner server error",
+            success: false
+        })
+    }
+}
+
+// get list of attendance request
+const getAttendanceRequests = async (req, res) => {
+    try {
+        let { id: userId, startDate, endDate, status = '' } = req.query;
+        const end = new Date(endDate); // Convert to Date object
+        end.setDate(end.getDate() + 1); // Add 1 day
+
+        const identify = userId || req.permissions.name.toLowerCase() !== "admin";
+
+        const value = await Attendance_Regulation.aggregate([
+            {
+                $match: {
+                    $and: [
+                        { createdAt: { $gte: new Date(startDate) } },
+                        { createdAt: { $lte: new Date(end) } }
+                    ],
+                    userId: !identify ? { $nin: [] } : { $eq: new mongoose.Types.ObjectId(userId || req.user._id) },
+                    status: !status ? { $nin: [] } : { $eq: status }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $unwind: {
+                    "path": "$user",
+                    preserveNullAndEmptyArrays: true // Keeps records even if no user is found
+                }
+            },
+            {
+                $match: {
+                    "user.status": "Active",
+                    "user.delete_at": { $exists: false },
+                    "user.joining_date": { "$lte": new Date(moment(new Date()).format("YYYY-MM-DD")) },
+                    $or: [
+                        { "user.leaveing_date": { $eq: null } },
+                        { "user.leaveing_date": { $gt: new Date(moment(new Date()).format("YYYY-MM-DD")) } },
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: "attendances",
+                    let: { attendanceId: "$attendanceId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $in: ["$$attendanceId", "$time._id"]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                timestamp: 1,
+                                time: {
+                                    $arrayElemAt: [
+                                        {
+                                            $filter: {
+                                                input: "$time",
+                                                as: "t",
+                                                cond: { $eq: ["$$attendanceId", "$$t._id"] }
+                                            }
+                                        },
+                                        0 // Get first element as an object
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "matched_attendance"
+                }
+            },
+            {
+                $unwind: {
+                    "path": "$matched_attendance",
+                    preserveNullAndEmptyArrays: true // Keeps records even if no user is found
+                }
+            },
+        ])
+
+        const result = value.map((val) => {
+            return {
+                ...val,
+                user: {
+                    name: decryptData(val.user.first_name).concat(" ", decryptData(val.user.last_name)),
+                    status: val.user.status,
+                }
+            }
+        })
+
+
+        return res.status(200).json({
+            success: true,
+            message: 'Successfully fetched data',
+            data: result,
             permissions: req.permissions
         })
     } catch (error) {
@@ -396,4 +487,4 @@ const statusChange = async (req, res) => {
     }
 }
 
-module.exports = { clockIn, clockOut, getAttendance, sendRegulationMail, getAttendanceRegulation, addComment, statusChange }
+module.exports = { getAttendanceRequests, clockIn, clockOut, getAttendance, sendRegulationMail, getAttendanceRegulation, addComment, statusChange }

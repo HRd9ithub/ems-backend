@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { getAttendance, clockIn, clockOut, sendRegulationMail, getAttendanceRegulation, addComment, statusChange } = require("../controller/attendanceController");
+const { getAttendance, clockIn, clockOut, sendRegulationMail, getAttendanceRequests, getAttendanceRegulation, addComment, statusChange } = require("../controller/attendanceController");
 const { check } = require("express-validator");
 const Auth = require("../middlewares/authtication");
 const { attendancePermission } = require("../middlewares/permission");
@@ -33,6 +33,8 @@ route.put("/:id", Auth, attendancePermission, clockOutvalidation, clockOut);
 
 // all data get for route
 route.get("/", Auth, attendancePermission, getAttendance);
+
+route.get("/requests", Auth, attendancePermission, getAttendanceRequests);
 
 // regulation email send route
 route.post("/regulation", Auth, regulationValidation, sendRegulationMail);
