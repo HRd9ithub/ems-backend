@@ -356,7 +356,7 @@ const attendancePermission = async (req, res, next) => {
 
         if (req.method === "POST" && req.baseUrl == "/api/attendance") {
             permission.permissions.create !== 0 ? next() : res.status(403).json({ message: "You do not have permission to create attendance." })
-        } else if (req.method === "GET" && req.baseUrl == "/api/attendance") {
+        } else if (req.method === "GET" && (req.baseUrl == "/api/attendance" || req.baseUrl == "/api/attendance/requests")) {
             if (req.method === "GET" && req.route.path == "/regulation/:id") {
                 permission.name.toLowerCase() === "admin" ? next() : res.status(403).json({ message: "You don't have permission to listing attendance to the attendance request Data. please contact admin." })
             } else {

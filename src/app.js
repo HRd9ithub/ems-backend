@@ -31,7 +31,7 @@ const invoiceAccountRoute = require('./routes/invoiceAccountRoute');
 const leaveSettingRoute = require('./routes/leaveSettingRoute');
 const chatBotRoute = require('./routes/chatBotRoute');
 const noteRoute = require('./routes/noteRoute');
-
+const compression = require("compression");
 const sendBirthdayMail = require('./cron-job');
 // add database
 const connectDB = require("./DB/connection");
@@ -55,6 +55,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.use(express.json());
+app.use(compression());
 
 // image get routeapp.use('/uploads', [
 app.use("/uploads/", [
