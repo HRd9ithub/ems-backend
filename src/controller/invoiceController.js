@@ -374,16 +374,22 @@ const getInvoice = async (req, res) => {
     try {
         const { startDate, endDate, id, } = req.query;
 
+        const matchStage = {
+            $match: {
+                userId: new mongoose.Types.ObjectId(req.user._id)
+            }
+        };
+
+        // Only add date filtering if both startDate and endDate are provided
+        if (startDate && endDate) {
+            matchStage.$match.$and = [
+                { "issue_date": { $gte: new Date(startDate) } },
+                { "issue_date": { $lte: new Date(endDate) } }
+            ];
+        }
+
         const result = await invoice.aggregate([
-            {
-                $match: {
-                    $and: [
-                        { "issue_date": { $gte: new Date(startDate) } },
-                        { "issue_date": { $lte: new Date(endDate) } },
-                    ],
-                    userId: new mongoose.Types.ObjectId(req.user._id)
-                }
-            },
+            matchStage,
             {
                 $lookup: {
                     from: "invoice_clients", localField: "clientId", foreignField: "_id", as: "invoiceClient"
@@ -595,8 +601,9 @@ const downloadInvoice = async (req, res) => {
             args: ['--no-sandbox']
         };
 
-        const pdfFileName = `invoice-${result[0].invoiceId}.pdf`;
-        const pdfPath = path.join(__dirname, '../../public/', pdfFileName); // Use a temp folder!
+        const safeInvoiceId = result[0].invoiceId.replace(/\//g, '-');
+        const pdfFileName = `invoice-${safeInvoiceId}.pdf`;
+        const pdfPath = path.join(__dirname, '../../public/', pdfFileName);
 
         html_to_pdf.generatePdf(file, options).then(pdfBuffer => {
             fs.writeFileSync(pdfPath, pdfBuffer);
@@ -608,12 +615,10 @@ const downloadInvoice = async (req, res) => {
                 fs.unlinkSync(pdfPath);
             }, 500);
         }).catch(error => {
-            console.error("PDF generation error: ", error);
             return res.status(500).json({ message: error.message || 'Internal server Error', success: false, stack: error.stack });
         });
 
     } catch (error) {
-        console.error("Main error: ", error);
         return res.status(500).json({
             message: error.message || "Internal server error",
             success: false,
